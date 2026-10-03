@@ -1,0 +1,44 @@
+{
+  "name": "@team-ai/engineering-kit",
+  "version": "1.0.0",
+  "description": "Kit portable para Claude Code y Cursor: OpenSpec, Azure DevOps, verificación, seguridad y trazabilidad.",
+  "type": "module",
+  "bin": {
+    "team-ai": "./dist/cli.js"
+  },
+  "exports": {
+    ".": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "skills",
+    "rules",
+    "mcp",
+    "contracts",
+    "templates",
+    "adapters",
+    "docs",
+    "ci",
+    "VERSION"
+  ],
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "npm run build && node scripts/run-tests.mjs",
+    "team-ai": "node dist/cli.js"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "typescript": "^5.8.0"
+  },
+  "keywords": [
+    "claude-code",
+    "cursor",
+    "openspec",
+    "azure-devops",
+    "agent-skills"
+  ],
+  "license": "MIT"
+}

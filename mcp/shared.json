@@ -1,0 +1,36 @@
+{
+  "schemaVersion": "team-ai/v1",
+  "profile": "developer-read",
+  "package": "@azure-devops/mcp@1.4.0",
+  "authentication": {
+    "cursor": "OAuth o env AZURE_DEVOPS_ORG + Azure CLI (`--authentication azcli`). Interpolación: ${env:AZURE_DEVOPS_ORG}. No guardar PAT en mcp.json.",
+    "claude": "Azure CLI o login interactivo del MCP. El org se escribe en args; Claude no interpola ${env:} igual que Cursor. Setup --org o placeholder ${AZURE_DEVOPS_ORG}."
+  },
+  "domains": ["core", "work", "work-items", "repositories"],
+  "readTools": [
+    "wit_work_item.get",
+    "wit_work_item.list_comments",
+    "wit_work_item_attachment",
+    "work.list_iterations",
+    "repo_pull_request.get"
+  ],
+  "writeToolsDenied": [
+    "wit_work_item_write",
+    "wit_work_item_comment_write",
+    "wit_work_item_link_write",
+    "work_iteration_write",
+    "repo_pull_request_write",
+    "repo_create_branch",
+    "pipelines_write"
+  ],
+  "conceptualMap": {
+    "get_parent": "wit_work_item.get + relations Hierarchy-Reverse",
+    "get_children": "wit_work_item.get + relations Hierarchy-Forward",
+    "get_comments": "wit_work_item.list_comments",
+    "get_attachments": "wit_work_item_attachment",
+    "get_iteration": "work.list_iterations",
+    "get_pr_links": "ArtifactLink + repo_pull_request.get"
+  },
+  "limitation": "Los dominios locales del MCP oficial incluyen tools *_write. El perfil restringido requiere el hook mcp-guard del kit. Sin hook, doctor marca limitation y no declara perfil restringido.",
+  "optionalServers": []
+}

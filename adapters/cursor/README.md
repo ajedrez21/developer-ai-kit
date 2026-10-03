@@ -1,0 +1,4 @@
+- Skills: `.cursor/skills/<name>/SKILL.md` (también se descubren `.claude/skills`).
+- Reglas: `.cursor/rules/team-ai-*.mdc`.
+- MCP: `.cursor/mcp.json` con `${env:AZURE_DEVOPS_ORG}` si no hay `--org`.
+- Hooks: `.cursor/hooks.json` `beforeMCPExecution` / `afterFileEdit` → `.cjs` del kit. Merge con hooks existentes.

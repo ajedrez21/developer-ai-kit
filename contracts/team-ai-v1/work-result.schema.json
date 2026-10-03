@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://team-ai.local/schemas/v1/work-result.json",
+  "title": "team-ai/v1 work-result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "artifactType",
+    "artifactId",
+    "generatedAt",
+    "workItem",
+    "contextVersion",
+    "contextHash",
+    "kitVersion",
+    "repository",
+    "changeId",
+    "codeFingerprint",
+    "verification",
+    "security",
+    "openspec",
+    "commits",
+    "pullRequests",
+    "exceptions",
+    "prReadiness"
+  ],
+  "properties": {
+    "schemaVersion": { "const": "team-ai/v1" },
+    "artifactType": { "const": "work-result" },
+    "artifactId": { "type": "string" },
+    "generatedAt": { "type": "string" },
+    "workItem": {
+      "type": "object",
+      "required": ["organization", "project", "id", "revision", "url"]
+    },
+    "contextVersion": { "type": "integer" },
+    "contextHash": { "type": "string" },
+    "kitVersion": { "type": "string" },
+    "repository": {
+      "type": "object",
+      "required": ["repoId", "branch", "headSha", "baseSha"]
+    },
+    "changeId": { "type": "string" },
+    "codeFingerprint": { "type": "string" },
+    "verification": { "$ref": "#/$defs/gate" },
+    "security": { "$ref": "#/$defs/gate" },
+    "openspec": {
+      "type": "object",
+      "required": ["proposalRef", "designRef", "tasksRef", "completedTasks", "totalTasks"]
+    },
+    "commits": { "type": "array" },
+    "pullRequests": { "type": "array" },
+    "exceptions": { "type": "array" },
+    "prReadiness": {
+      "type": "object",
+      "required": ["status", "reasons"],
+      "properties": {
+        "status": { "enum": ["READY", "BLOCKED", "UNKNOWN"] },
+        "reasons": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "gate": {
+      "type": "object",
+      "required": ["status", "reportRef", "checkedFingerprint", "checkedAt"],
+      "properties": {
+        "status": { "enum": ["PASS", "FAIL", "REVIEW", "NOT_RUN", "NOT_AVAILABLE", "STALE"] },
+        "reportRef": { "type": "string" },
+        "checkedFingerprint": { "type": "string" },
+        "checkedAt": { "type": "string" }
+      }
+    }
+  }
+}

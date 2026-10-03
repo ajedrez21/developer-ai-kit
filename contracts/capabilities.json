@@ -1,0 +1,20 @@
+{
+  "kitVersion": "1.0.0",
+  "node": ">=20.19.0",
+  "openspec": {
+    "cli": "@fission-ai/openspec",
+    "claudePropose": "/opsx:propose",
+    "cursorPropose": "/opsx-propose",
+    "verify": "only if expanded profile installed"
+  },
+  "azureDevOpsMcp": {
+    "package": "@azure-devops/mcp@1.4.0",
+    "remote": "https://mcp.dev.azure.com/{organization}",
+    "developerDomains": ["core", "work", "work-items", "repositories"]
+  },
+  "securitySkill": {
+    "name": "security-compliance",
+    "version": "1.0.0",
+    "modes": ["diff", "audit", "pr"]
+  }
+}

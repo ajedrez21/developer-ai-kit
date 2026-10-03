@@ -1,0 +1,27 @@
+{
+  "command": "diff",
+  "gate": { "status": "FAIL" },
+  "snapshot": { "scope": "changed_files" },
+  "findings": [
+    {
+      "id": "F-aaaaaaaaaaaa",
+      "title": "SQL concat",
+      "severity": "high",
+      "baseline_status": "introduced",
+      "file": "src/customers/search.ts",
+      "evidence": "concatena input en query",
+      "risk": "inyección",
+      "remediation": "usar parámetros"
+    },
+    {
+      "id": "F-bbbbbbbbbbbb",
+      "title": "legacy cookie",
+      "severity": "medium",
+      "baseline_status": "preexisting",
+      "file": "src/auth/cookie.ts",
+      "evidence": "ya existía en main",
+      "risk": "sesión",
+      "remediation": "fuera de scope"
+    }
+  ]
+}

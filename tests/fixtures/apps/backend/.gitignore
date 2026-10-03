@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.ai/work-items/
+.ai/security/
+.ai/tmp/
+.ai/backups/
+.env
+*.log

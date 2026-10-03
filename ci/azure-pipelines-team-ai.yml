@@ -1,0 +1,42 @@
+trigger:
+  branches:
+    include:
+      - main
+      - feature/*
+      - fix/*
+
+pool:
+  vmImage: ubuntu-latest
+
+variables:
+  NODE_VERSION: "20.19.0"
+
+stages:
+  - stage: DeterministicGates
+    displayName: Team AI deterministic gates
+    jobs:
+      - job: fingerprint_and_policy
+        displayName: Fingerprint, schema, verify artifacts
+        steps:
+          - task: NodeTool@0
+            inputs:
+              versionSpec: $(NODE_VERSION)
+          - script: npm ci && npm test
+            displayName: Kit self-tests (when this repo is the kit)
+            condition: eq(variables['Build.Repository.Name'], 'developer-ai-kit')
+          - script: |
+              echo "CI valida el commit exacto ($(Build.SourceVersion))."
+              echo "No se reejecuta el auditor LLM security-compliance."
+              echo "Si existen artefactos .ai/security, se comprueba freshness vs fingerprint."
+              echo "Required checks de branch policy deben configurarse en Azure DevOps; este YAML no activa políticas."
+            displayName: Document coverage limits
+
+  - stage: LlmAuditNotRun
+    displayName: LLM audit not executed in CI
+    jobs:
+      - job: mark_not_run
+        steps:
+          - script: |
+              echo "##vso[task.logissue type=warning]security-compliance LLM review is NOT_RUN in this pipeline unless an authorized runner is added."
+              echo "status=NOT_RUN"
+            displayName: Distinguish LLM coverage

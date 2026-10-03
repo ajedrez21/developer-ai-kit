@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "team-ai/v1",
+  "artifactType": "work-context",
+  "artifactId": "ctx-fixture-3215",
+  "generatedAt": "2026-10-03T12:00:00Z",
+  "workItem": {
+    "organization": "contoso",
+    "project": "shop",
+    "id": 3215,
+    "revision": 7,
+    "url": "https://dev.azure.com/contoso/shop/_workitems/edit/3215"
+  },
+  "parentWorkItem": {
+    "organization": "contoso",
+    "project": "shop",
+    "id": 3200,
+    "revision": 3,
+    "url": "https://dev.azure.com/contoso/shop/_workitems/edit/3200"
+  },
+  "contextVersion": 1,
+  "contextHash": "PLACEHOLDER",
+  "repositories": [
+    {
+      "repoId": "shop-api",
+      "role": "backend",
+      "baseRef": "main",
+      "baseSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    }
+  ],
+  "summary": {
+    "functionalGoal": "Filtrar clientes por estado",
+    "currentBehavior": "La búsqueda no acepta statusId",
+    "expectedBehavior": "La búsqueda filtra por statusId si se envía"
+  },
+  "scope": {
+    "included": ["src/customers"],
+    "excluded": ["src/payments"],
+    "candidateFiles": ["src/customers/search.ts", "src/customers/search.test.ts"]
+  },
+  "acceptanceCriteria": [
+    { "id": "AC1", "text": "Filtra por statusId cuando se envía", "evidenceIds": ["E1"] }
+  ],
+  "contracts": [
+    {
+      "id": "SP-CUSTOMER-SEARCH",
+      "kind": "stored-procedure",
+      "version": "1.2.0",
+      "status": "CONFIRMED",
+      "sourceEvidenceIds": ["E1"],
+      "definition": {
+        "name": "usp_Customer_Search",
+        "params": [{ "name": "statusId", "type": "int", "nullable": true }]
+      }
+    }
+  ],
+  "dependencies": [
+    { "id": "DEP-SP-ENV", "kind": "sp-availability", "status": "SATISFIED", "blocks": [], "evidenceIds": ["E2"] }
+  ],
+  "evidence": [
+    {
+      "id": "E1",
+      "kind": "azure-comment",
+      "source": "work-item:3215",
+      "classification": "CONFIRMED",
+      "observedAt": "2026-10-03T12:00:00Z",
+      "summary": "Contrato SP adjunto y confirmado"
+    },
+    {
+      "id": "E2",
+      "kind": "environment",
+      "source": "dev-db",
+      "classification": "INFERRED",
+      "observedAt": "2026-10-03T12:00:00Z",
+      "summary": "SP presente en inventario de desarrollo"
+    }
+  ],
+  "gaps": [],
+  "testPlan": [{ "id": "T1", "description": "búsqueda con y sin statusId", "command": "npm test -- search" }],
+  "assignedTo": "dev.backend.1",
+  "readiness": { "status": "READY", "reasons": [] }
+}
