@@ -6,6 +6,8 @@ import { previewCommit, commitChange } from "./commit.js";
 import { attachContextHash, sampleWorkContext, validateWorkContext, validateWorkResult } from "./contracts.js";
 import { doctor } from "./doctor.js";
 import { computeFingerprint } from "./fingerprint.js";
+import { ensureWorkItemBranch, workItemBranchName, type BranchKind } from "./git.js";
+import { loadPolicy } from "./policy.js";
 import { KIT_VERSION } from "./kit-root.js";
 import { evaluatePrReady, exportWorkResult, prBody, detectRepoId } from "./pr-ready.js";
 import { setup, uninstall, update } from "./setup.js";
@@ -122,8 +124,16 @@ function main(): void {
           acceptance: flags.acceptance ? String(flags.acceptance).split("||") : [],
         });
       }
+      const policy = loadPolicy(target);
+      const kind = branchKindOf(flags.kind);
+      const branchName = workItemBranchName(ctx.workItem.id, ctx.summary.functionalGoal, kind);
+      const branch = ensureWorkItemBranch(target, {
+        branch: branchName,
+        base: String(flags.base ?? policy.baseBranch),
+        pattern: policy.branchPattern,
+      });
       const dir = saveLocalContext(target, ctx);
-      console.log(JSON.stringify({ dir, readiness: ctx.readiness, contextHash: ctx.contextHash }, null, 2));
+      console.log(JSON.stringify({ dir, readiness: ctx.readiness, contextHash: ctx.contextHash, branch }, null, 2));
       return;
     }
     case "import-context": {
@@ -238,6 +248,12 @@ function main(): void {
       console.log(helpText());
       process.exitCode = 2;
   }
+}
+
+function branchKindOf(value: string | boolean | undefined): BranchKind {
+  const kind = String(value ?? "feature");
+  if (kind === "feature" || kind === "fix" || kind === "chore") return kind;
+  throw new Error(`--kind debe ser feature, fix o chore. Recibido: ${kind}`);
 }
 
 function printReport(report: { actions: string[]; warnings: string[] }): void {

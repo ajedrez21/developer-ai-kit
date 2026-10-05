@@ -11,6 +11,7 @@ export interface GatePolicy {
   requiredChecksByRole: Record<string, string[]>;
   workItemRefSyntax: "azure-hash" | "azure-ab";
   branchPattern: string;
+  baseBranch: string;
 }
 
 export const DEFAULT_POLICY: GatePolicy = {
@@ -36,6 +37,7 @@ export const DEFAULT_POLICY: GatePolicy = {
   },
   workItemRefSyntax: "azure-hash",
   branchPattern: "^(feature|fix|chore)/[0-9]+[-_].+",
+  baseBranch: "sandbox",
 };
 
 export function loadPolicy(target: string): GatePolicy {

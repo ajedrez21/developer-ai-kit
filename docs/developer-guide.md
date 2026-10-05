@@ -4,7 +4,7 @@ Flujo diario (mismo en Claude Code y Cursor). Los slash del kit son skills del p
 
 ## 1. Contexto
 
-`/work-item 3215`
+`/work-item 3215` crea la rama local `feature/<id>-<slug>` desde `sandbox`.
 
 Si el TL exportó `work-context.json`, pasalo. Si no, el kit arma contexto desde Azure (perfil lectura) y marca CONFIRMED/INFERRED/UNKNOWN.
 

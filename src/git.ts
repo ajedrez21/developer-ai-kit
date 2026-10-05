@@ -71,3 +71,63 @@ export function isIgnored(repo: string, relPath: string): boolean {
 export function unique(values: string[]): string[] {
   return [...new Set(values)].sort();
 }
+
+export type BranchKind = "feature" | "fix" | "chore";
+
+export function workItemBranchName(id: number, title: string, kind: BranchKind = "feature"): string {
+  const slug = title
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-|-$/g, "")
+    .slice(0, 48)
+    .replace(/-$/g, "");
+  return `${kind}/${id}-${slug || "task"}`;
+}
+
+export interface EnsuredBranch {
+  branch: string;
+  created: boolean;
+  base: string;
+  headSha: string;
+}
+
+export function ensureWorkItemBranch(repo: string, options: { branch: string; base: string; pattern: string }): EnsuredBranch {
+  requireGitRepo(repo);
+  if (!new RegExp(options.pattern).test(options.branch)) {
+    throw new Error(`La rama ${options.branch} no cumple ${options.pattern}.`);
+  }
+  const current = runGit(repo, ["rev-parse", "--abbrev-ref", "HEAD"]).stdout.trim();
+  if (current === options.branch) {
+    return { branch: options.branch, created: false, base: options.base, headSha: headOf(repo) };
+  }
+  const dirty = runGit(repo, ["status", "--porcelain"]).stdout.trim();
+  if (dirty) {
+    throw new Error("Hay cambios sin commitear. No creo ni cambio de rama hasta que el working tree esté limpio.");
+  }
+  const local = runGit(repo, ["rev-parse", "--verify", `refs/heads/${options.branch}`]);
+  if (local.code === 0) {
+    checkout(repo, ["checkout", options.branch]);
+    return { branch: options.branch, created: false, base: options.base, headSha: headOf(repo) };
+  }
+  const base = resolveBase(repo, options.base);
+  checkout(repo, ["checkout", "--no-track", "-b", options.branch, base]);
+  return { branch: options.branch, created: true, base, headSha: headOf(repo) };
+}
+
+function headOf(repo: string): string {
+  return runGit(repo, ["rev-parse", "HEAD"]).stdout.trim();
+}
+
+function checkout(repo: string, args: string[]): void {
+  const result = runGit(repo, args);
+  if (result.code !== 0) throw new Error(result.stderr.trim() || `git ${args.join(" ")} falló`);
+}
+
+function resolveBase(repo: string, base: string): string {
+  for (const ref of [base, `refs/heads/${base}`, `origin/${base}`]) {
+    if (runGit(repo, ["rev-parse", "--verify", ref]).code === 0) return ref;
+  }
+  throw new Error(`No existe la rama base '${base}'. Actualizá sandbox antes de /work-item.`);
+}
