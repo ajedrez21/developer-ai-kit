@@ -11,3 +11,4 @@ disable-model-invocation: true
 3. No metas integración HTTP en componentes si ya hay servicios.
 4. Cubrí loading/error/empty, validaciones y accesibilidad del patrón existente.
 5. Tipos API: no inventes campos fuera del contrato confirmado.
+6. Nombres en inglés: archivos, componentes, funciones, variables, props, hooks y rutas.
