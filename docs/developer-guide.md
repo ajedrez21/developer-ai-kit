@@ -10,7 +10,7 @@ Si el TL exportó `work-context.json`, pasalo. Si no, el kit arma contexto desde
 
 ## 2. Plan
 
-`/work-propose 3215` → el agente llama `/opsx:propose` (Claude) o `/opsx-propose` (Cursor). Revisá `openspec/changes/wi-3215-*/`. Aprobá esa versión (contextHash + planHash).
+`/work-propose 3215` → el agente llama `/opsx:propose` (Claude) o `/opsx-propose` (Cursor) y guarda `plan-approval.json` de esa versión. Correr `/work-apply` aprueba implementarla. Si el resultado no cierra, se itera y se vuelve a proponer.
 
 ## 3. Código
 

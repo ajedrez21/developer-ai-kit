@@ -21,7 +21,7 @@ Generar la propuesta nativa de OpenSpec. Este wrapper no mantiene una segunda li
    - No uses `/ospx-*`. Si verify no está instalado, no lo finjas.
 5. Invocá el propose **nativo** de la versión detectada. Incorporá contexto TL, scope, contratos, riesgos y aceptación.
 6. Generá plan de validación y archivos candidatos. Mostrá el plan al developer.
-7. Guardá aprobación explícita en `.ai/work-items/<...>/plan-approval.json` ligada a `contextHash`, `planHash`, repo y `baseSha` **después** de que el developer autorice esa versión.
-8. Un cambio material de requisitos/contrato/arquitectura/scope invalida la aprobación. No pidas aprobación de nuevo si la misma versión ya está autorizada.
+7. Guardá ya `.ai/work-items/<...>/plan-approval.json` ligado a `contextHash`, `planHash`, repo y `baseSha` de la versión que acabás de generar. No pidas una autorización aparte: invocar `/work-propose` arma esa aprobación. `approvedBy` es quien invocó el comando.
+8. Si el plan cambia y el `planHash` es otro, actualizá `plan-approval.json` a esa versión. Si es la misma versión, no la reescribas.
 
-La revisión humana es del plan de negocio, no de la instalación de este kit.
+Correr después `/work-apply` es la aprobación para implementar. Si el resultado no cierra, el developer itera y vuelve a `/work-propose` para actualizar el plan.

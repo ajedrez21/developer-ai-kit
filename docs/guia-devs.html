@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guía del Developer AI Kit — Backend y Frontend</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --paper: #fffcf7;
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #ddd6c8;
+      --accent: #1f4d3a;
+      --accent-soft: #e8f1ec;
+      --warn: #7a4a12;
+      --warn-bg: #f8eedc;
+      --code-bg: #1c1915;
+      --code-fg: #f4efe6;
+      --ok: #1f4d3a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "IBM Plex Sans", Calibri, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+    header {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      margin-bottom: 28px;
+    }
+    header p.kicker {
+      margin: 0 0 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 { margin: 0 0 10px; font-size: 32px; line-height: 1.15; }
+    .lede { margin: 0; color: var(--muted); font-size: 17px; }
+    nav {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 18px;
+      font-size: 14px;
+    }
+    nav a { color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 18px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin: 22px 0 8px; font-size: 17px; }
+    p, li { font-size: 15.5px; }
+    ol.steps { padding-left: 22px; }
+    ol.steps > li { margin: 10px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+      margin: 12px 0 4px;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px 8px 0;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    code, kbd {
+      font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+      font-size: 0.92em;
+    }
+    p code, li code, td code {
+      background: #efeae0;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    pre {
+      background: var(--code-bg);
+      color: var(--code-fg);
+      border-radius: 10px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      font-size: 13.5px;
+      line-height: 1.45;
+    }
+    pre code { background: none; color: inherit; padding: 0; }
+    .note, .warn, .ok {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 14px 0;
+      font-size: 14.5px;
+    }
+    .note { background: var(--accent-soft); border-left: 4px solid var(--accent); }
+    .warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+    .ok { background: #e8f3ea; border-left: 4px solid var(--ok); }
+    .note strong, .warn strong, .ok strong { display: block; margin-bottom: 4px; }
+    a.btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 8px 0 12px;
+    }
+    a.btn:hover { opacity: 0.92; }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    @media (max-width: 640px) {
+      nav { grid-template-columns: 1fr; }
+      header, section { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="kicker">Team AI · Developer AI Kit v1.0.0</p>
+      <h1>Cómo instalar y usar el kit en Backend y Frontend</h1>
+      <p class="lede">
+        Guía para unirse a los repos, instalar las herramientas externas, cargar el kit en cada proyecto
+        y trabajar una tarea de Azure de punta a punta. Incluye el alta al team de Postman para backend.
+      </p>
+      <nav>
+        <a href="#que-es">1. Qué es este kit</a>
+        <a href="#requisitos">2. Requisitos de la máquina</a>
+        <a href="#powershell">3. PowerShell y npm.cmd</a>
+        <a href="#bajar">4. Bajar los repositorios</a>
+        <a href="#externos">5. Paquetes y herramientas externas</a>
+        <a href="#instalar">6. Instalar el kit en cada repo</a>
+        <a href="#verificar">7. Verificar la instalación</a>
+        <a href="#usar">8. Cómo usar el kit (flujo diario)</a>
+        <a href="#comandos">9. Qué hace cada comando</a>
+        <a href="#postman">10. Postman (solo backend)</a>
+        <a href="#problemas">11. Problemas frecuentes</a>
+      </nav>
+    </header>
+
+    <section id="que-es">
+      <h2>1. Qué es este kit</h2>
+      <p>
+        El <strong>Developer AI Kit</strong> es un procedimiento común para Cursor y Claude Code.
+        No cambia la arquitectura del producto: se instala encima de los repos de backend y frontend
+        y deja skills, reglas y un CLI para trabajar cada Work Item de Azure de la misma forma.
+      </p>
+      <p>El recorrido de una tarea es:</p>
+      <ol class="steps">
+        <li><code>/work-item</code> — lee Azure, arma contexto y crea la rama desde <code>sandbox</code>.</li>
+        <li><code>/work-propose</code> — genera el plan OpenSpec.</li>
+        <li><code>/work-apply</code> — implementa ese plan. Correrlo es la aprobación para codear.</li>
+        <li><code>/verify-change</code> y <code>/security-review</code> — gates.</li>
+        <li><code>/commit-change</code> y <code>/pr-ready</code> — commit local y preparación del PR. No hay push automático.</li>
+      </ol>
+      <div class="note">
+        <strong>Dos repos, dos instalaciones</strong>
+        El kit se instala <em>en cada repo de producto</em>, no una sola vez en la máquina.
+        Backend usa <code>--role backend</code> y frontend <code>--role frontend</code>.
+      </div>
+    </section>
+
+    <section id="requisitos">
+      <h2>2. Requisitos de la máquina</h2>
+      <table>
+        <thead>
+          <tr><th>Herramienta</th><th>Para qué</th><th>Cómo comprobar</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Git</td>
+            <td>Clonar repos y crear ramas</td>
+            <td><code>git --version</code></td>
+          </tr>
+          <tr>
+            <td>Node.js 20.19 o superior</td>
+            <td>CLI del kit, OpenSpec y MCP de Azure</td>
+            <td><code>node -v</code></td>
+          </tr>
+          <tr>
+            <td>Cursor (o Claude Code)</td>
+            <td>Chat donde corren las skills <code>/work-*</code></td>
+            <td>Abrir el repo como carpeta del proyecto</td>
+          </tr>
+          <tr>
+            <td>Acceso Azure DevOps</td>
+            <td>Org <code>DMEDLATSYS</code>, proyecto <code>NCSLite</code></td>
+            <td>SSH o HTTPS al repo; login de Azure CLI</td>
+          </tr>
+          <tr>
+            <td>.NET SDK (backend)</td>
+            <td>Compilar <code>NWebCore.Backend.csproj</code></td>
+            <td><code>dotnet --version</code></td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Node se baja de <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a> (LTS 20 o 22).
+        Git, de <a href="https://git-scm.com/download/win" target="_blank" rel="noopener">git-scm.com</a>.
+        Azure CLI, de
+        <a href="https://learn.microsoft.com/cli/azure/install-azure-cli-windows" target="_blank" rel="noopener">Microsoft Learn</a>.
+      </p>
+    </section>
+
+    <section id="powershell">
+      <h2>3. PowerShell: usá <code>npm.cmd</code> y <code>openspec.cmd</code></h2>
+      <p>
+        En Windows, si PowerShell tiene la política de ejecución restringida, <code>npm</code> y
+        <code>openspec</code> fallan con <em>“el archivo npm.ps1 no está firmado digitalmente”</em>.
+        No hace falta cambiar la política. Llamá al <code>.cmd</code>:
+      </p>
+<pre><code>npm.cmd -v
+npm.cmd install -g @fission-ai/openspec
+openspec.cmd --version</code></pre>
+      <p><code>node</code> y <code>git</code> no tienen ese problema. El resto de esta guía usa <code>npm.cmd</code> / <code>openspec.cmd</code> para que copie y pegue sin fricción.</p>
+    </section>
+
+    <section id="bajar">
+      <h2>4. Bajar los repositorios</h2>
+      <p>Creá las carpetas si no existen y cloná. Las rutas de ejemplo coinciden con las del equipo; podés usar otras, pero entonces ajustá los <code>--target</code> del setup.</p>
+      <h3>4.1 Kit (una vez por máquina)</h3>
+<pre><code>mkdir "C:\Maxi\Repos Propios" -Force
+cd "C:\Maxi\Repos Propios"
+git clone https://github.com/ajedrez21/developer-ai-kit.git
+cd developer-ai-kit
+npm.cmd install
+npm.cmd run build</code></pre>
+      <p>
+        <code>npm run build</code> deja el CLI en <code>dist/cli.js</code>. Sin ese build, el setup no corre.
+        El kit no se “instala” como app: se usa desde esta carpeta para configurarlo en cada repo de producto.
+      </p>
+
+      <h3>4.2 Backend y frontend (repos de producto)</h3>
+      <p>Hace falta acceso SSH a Azure DevOps. Si todavía no tenés clave cargada en el portal, Git va a pedir autenticación.</p>
+<pre><code>mkdir "C:\Maxi\Sistemas\Repos" -Force
+cd "C:\Maxi\Sistemas\Repos"
+
+git clone git@ssh.dev.azure.com:v3/DMEDLATSYS/NCSLite/NWebCore.Backend
+git clone git@ssh.dev.azure.com:v3/DMEDLATSYS/NCSLite/NWeb.Frontend</code></pre>
+      <p>En cada repo, trabajamos sobre <code>sandbox</code> (no sobre <code>main</code>):</p>
+<pre><code>cd C:\Maxi\Sistemas\Repos\NWebCore.Backend
+git checkout sandbox
+git pull
+
+cd C:\Maxi\Sistemas\Repos\NWeb.Frontend
+git checkout sandbox
+git pull</code></pre>
+      <div class="warn">
+        <strong>Working tree limpio</strong>
+        <code>/work-item</code> crea la rama de la tarea desde <code>sandbox</code>. Si hay cambios sin commitear, no cambia de rama. Antes de arrancar una tarea, commiteá o stashé lo ajeno.
+      </div>
+    </section>
+
+    <section id="externos">
+      <h2>5. Paquetes y herramientas externas</h2>
+      <p>Esto se hace <strong>una vez por máquina</strong>, salvo OpenSpec <code>init</code>, que se corre <strong>en cada repo de producto</strong>.</p>
+
+      <h3>5.1 OpenSpec (CLI global)</h3>
+      <p>El kit no implementa el plan: llama a OpenSpec. Sin este CLI, Cursor no tiene <code>/opsx-propose</code> ni <code>/opsx-apply</code>.</p>
+<pre><code>npm.cmd install -g @fission-ai/openspec
+openspec.cmd --version</code></pre>
+      <p>Tiene que mostrar una versión (en el equipo se validó <code>1.14.1</code>).</p>
+
+      <h3>5.2 Azure CLI (login para el MCP de Azure DevOps)</h3>
+      <p>El kit lee Work Items por el servidor MCP <code>ado-developer</code>, autenticado con Azure CLI. No se guardan PAT en el repo.</p>
+<pre><code>az --version
+az login
+az account show</code></pre>
+      <p>
+        Si <code>az</code> no existe, instalá Azure CLI y volvé a abrir la terminal.
+        El login abre el navegador de la cuenta con la que accedés a <code>DMEDLATSYS</code>.
+      </p>
+
+      <h3>5.3 Skill de seguridad <code>security-compliance</code></h3>
+      <p>
+        El kit no copia el auditor: lo busca en el usuario. Tiene que existir
+        <code>%USERPROFILE%\.cursor\skills\security-compliance\SKILL.md</code>
+        (o la misma carpeta bajo <code>.claude\skills</code>, o la variable <code>TEAM_AI_SECURITY_SKILL</code>).
+      </p>
+      <p>
+        Pedile a quien ya lo tenga en el equipo la carpeta de esa skill y copiala a
+        <code>C:\Users\&lt;tu-usuario&gt;\.cursor\skills\security-compliance\</code>.
+        Si falta, <code>/security-review</code> deja el gate en <code>NOT_AVAILABLE</code>; no se finge un PASS.
+      </p>
+
+      <h3>5.4 Inicializar OpenSpec en cada repo de producto</h3>
+      <p>Esto crea <code>/opsx-propose</code> y <code>/opsx-apply</code> dentro del proyecto. Hay que correrlo en backend y, cuando trabajes frontend, también ahí.</p>
+<pre><code>cd C:\Maxi\Sistemas\Repos\NWebCore.Backend
+openspec.cmd init --tools claude,cursor --profile core --no-animation
+
+cd C:\Maxi\Sistemas\Repos\NWeb.Frontend
+openspec.cmd init --tools claude,cursor --profile core --no-animation</code></pre>
+      <div class="note">
+        <strong>Reiniciá Cursor</strong>
+        Después del <code>init</code>, Cursor tiene que recargar comandos. Cerrá y abrí el IDE (o al menos la ventana del repo) antes de probar <code>/work-propose</code>.
+      </div>
+    </section>
+
+    <section id="instalar">
+      <h2>6. Instalar el kit en cada repo</h2>
+      <p>Siempre desde la carpeta del kit, apuntando <code>--target</code> al repo de producto. Org y proyecto de Azure son fijos para este equipo:</p>
+      <ul>
+        <li>Organización: <code>DMEDLATSYS</code></li>
+        <li>Proyecto: <code>NCSLite</code></li>
+      </ul>
+
+      <h3>6.1 Backend</h3>
+<pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
+
+node dist/cli.js setup --target C:\Maxi\Sistemas\Repos\NWebCore.Backend --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend</code></pre>
+
+      <h3>6.2 Frontend</h3>
+<pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
+
+node dist/cli.js setup --target C:\Maxi\Sistemas\Repos\NWeb.Frontend --role frontend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pre>
+
+      <p>El setup copia las 11 skills a <code>.cursor/skills</code> y <code>.claude/skills</code>, las reglas del rol, MCP, hooks y <code>.ai/kit-manifest.json</code>. Si el backend ya tenía un MCP <code>ado</code>, lo conserva y agrega <code>ado-developer</code> al lado.</p>
+      <table>
+        <thead>
+          <tr><th>Repo</th><th>Rol</th><th>Regla extra</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>NWebCore.Backend</td><td><code>backend</code></td><td><code>team-ai-backend.mdc</code></td></tr>
+          <tr><td>NWeb.Frontend</td><td><code>frontend</code></td><td><code>team-ai-frontend.mdc</code></td></tr>
+        </tbody>
+      </table>
+      <div class="warn">
+        <strong>No edites las skills generadas</strong>
+        Los <code>SKILL.md</code> de <code>.cursor/skills</code> y <code>.claude/skills</code> se regeneran con setup/update. El texto canónico vive en el kit, carpeta <code>skills/</code>.
+      </div>
+      <p>Otros comandos útiles del CLI:</p>
+<pre><code>node dist/cli.js setup --target C:\ruta\al\repo --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite --dry-run
+node dist/cli.js update --target C:\ruta\al\repo --role backend --hosts claude,cursor
+node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
+      <p><code>uninstall</code> solo quita archivos administrados por el kit. No borra tu código.</p>
+    </section>
+
+    <section id="verificar">
+      <h2>7. Verificar que quedó instalado</h2>
+      <p>En cada repo de producto tendrían que existir, como mínimo:</p>
+      <ul>
+        <li>Las 11 skills en <code>.cursor/skills/&lt;nombre&gt;/SKILL.md</code> y lo mismo bajo <code>.claude/skills</code></li>
+        <li><code>.cursor/commands/opsx-propose.md</code> (lo crea OpenSpec, no el kit)</li>
+        <li><code>.ai/kit-manifest.json</code> con rol <code>backend</code> o <code>frontend</code></li>
+        <li><code>.cursor/mcp.json</code> con el servidor <code>ado-developer</code></li>
+        <li><code>openspec/config.yaml</code></li>
+      </ul>
+      <p>Skills del kit: <code>work-item</code>, <code>work-propose</code>, <code>work-apply</code>, <code>verify-change</code>, <code>security-review</code>, <code>security-fix</code>, <code>commit-change</code>, <code>pr-ready</code>, <code>knowledge-backend</code>, <code>knowledge-frontend</code>, <code>knowledge-testing</code>.</p>
+      <div class="note">
+        <strong>Gitignore</strong>
+        En estos repos <code>.cursor/</code>, <code>.claude/</code> y <code>.ai/</code> suelen estar ignorados. Es normal que <code>git status</code> no muestre las skills. Están en disco para Cursor, no para el remoto.
+      </div>
+      <p>Abrí <strong>el repo de la tarea</strong> como carpeta de Cursor (backend o frontend, no el kit). En el chat, los slash <code>/work-item</code>, <code>/work-propose</code>, etc. tienen que aparecer como skills del proyecto.</p>
+    </section>
+
+    <section id="usar">
+      <h2>8. Cómo usar el kit (flujo diario)</h2>
+      <p>Trabajá siempre en el chat de Cursor con el repo correcto abierto. Reemplazá <code>6551</code> por el id de tu Work Item.</p>
+
+      <h3>Paso 1 — Contexto y rama</h3>
+<pre><code>/work-item 6551</code></pre>
+      <p>
+        Lee la tarea en Azure (MCP de solo lectura). Si el tech lead te pasó un <code>work-context.json</code>, adjuntarlo en el mismo mensaje.
+        Crea la rama local <code>feature/&lt;id&gt;-&lt;slug&gt;</code> desde <code>sandbox</code> (si no está local, usa <code>origin/sandbox</code>). No hace push.
+      </p>
+      <p>Revisá <code>.ai/work-items/DMEDLATSYS-NCSLite-&lt;id&gt;/work-context.md</code>:</p>
+      <ul>
+        <li><code>READY</code> — podés proponer.</li>
+        <li><code>DRAFT</code> o <code>BLOCKED</code> — faltan criterios o un contrato. No pases a <code>/work-propose</code>.</li>
+      </ul>
+
+      <h3>Paso 2 — Plan</h3>
+<pre><code>/work-propose 6551</code></pre>
+      <p>
+        Llama a <code>/opsx-propose</code> (Cursor) y escribe <code>openspec/changes/wi-&lt;id&gt;-*/</code>
+        (<code>proposal.md</code>, <code>design.md</code>, <code>tasks.md</code>).
+        Guarda <code>plan-approval.json</code> de esa versión. No hay que responder “autorizo” en un paso extra.
+      </p>
+      <p>Leé el plan. Si no es lo que querés, pedí cambios y volvé a <code>/work-propose</code>.</p>
+
+      <h3>Paso 3 — Código</h3>
+<pre><code>/work-apply 6551</code></pre>
+      <p>
+        Implementa el plan actual. Correr apply es la aprobación para codear.
+        Si el resultado no cierra, iterá el código y después actualizá el plan con otro <code>/work-propose</code>.
+      </p>
+      <p>No inventa firmas de stored procedure ni de API. No pisa cambios ajenos del working tree.</p>
+
+      <h3>Paso 4 — Gates</h3>
+<pre><code>/verify-change 6551
+/security-review 6551 --changes</code></pre>
+      <p>
+        Verify corre los checks reales del repo (en backend, el build). Un script ausente queda
+        <code>NOT_AVAILABLE</code>, nunca PASS.
+        Security audita el diff y <strong>no modifica código</strong>. Si hay hallazgos que hay que arreglar:
+      </p>
+<pre><code>/security-fix 6551
+/verify-change 6551
+/security-review 6551 --changes</code></pre>
+
+      <h3>Paso 5 — Commit y PR</h3>
+<pre><code>/commit-change 6551 --preview
+/commit-change 6551
+/pr-ready 6551</code></pre>
+      <p>
+        El preview muestra el mensaje. La segunda invocación hace el commit local, solo con archivos de la tarea, con referencia Azure (<code>#6551</code>).
+        <strong>No hace push</strong>. <code>/pr-ready</code> arma título y body; el PR se crea solo si lo pedís explícitamente.
+      </p>
+      <div class="ok">
+        <strong>Resumen para copiar en el chat</strong>
+        <code>/work-item ID</code> → <code>/work-propose ID</code> → <code>/work-apply ID</code> →
+        <code>/verify-change ID</code> → <code>/security-review ID --changes</code> →
+        <code>/commit-change ID --preview</code> → <code>/commit-change ID</code> → <code>/pr-ready ID</code>
+      </div>
+    </section>
+
+    <section id="comandos">
+      <h2>9. Qué hace cada comando (sin magia)</h2>
+      <table>
+        <thead>
+          <tr><th>Comando</th><th>Qué hace</th><th>Qué no hace</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>/work-item</code></td>
+            <td>Contexto Azure + rama <code>feature/id-slug</code> desde sandbox</td>
+            <td>No propone, no codea, no pushea</td>
+          </tr>
+          <tr>
+            <td><code>/work-propose</code></td>
+            <td>Plan OpenSpec + <code>plan-approval.json</code></td>
+            <td>No edita código de producto</td>
+          </tr>
+          <tr>
+            <td><code>/work-apply</code></td>
+            <td>Implementa el plan actual</td>
+            <td>No inventa contratos SP/API</td>
+          </tr>
+          <tr>
+            <td><code>/verify-change</code></td>
+            <td>Compara plan vs código y corre checks</td>
+            <td>No marca PASS si la herramienta no existe</td>
+          </tr>
+          <tr>
+            <td><code>/security-review</code></td>
+            <td>Auditoría del diff</td>
+            <td>No modifica código</td>
+          </tr>
+          <tr>
+            <td><code>/security-fix</code></td>
+            <td>Remedia findings autorizados</td>
+            <td>No se autoaprueba el gate</td>
+          </tr>
+          <tr>
+            <td><code>/commit-change</code></td>
+            <td>Commit local del diff de la tarea</td>
+            <td>No push, no <code>git add .</code></td>
+          </tr>
+          <tr>
+            <td><code>/pr-ready</code></td>
+            <td>Evalúa READY y exporta <code>work-result</code></td>
+            <td>No crea el PR ni marca el WI como Done</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <code>knowledge-backend</code>, <code>knowledge-frontend</code> y <code>knowledge-testing</code> no se invocan a mano:
+        <code>/work-apply</code> las carga si el cambio toca esa capa.
+      </p>
+      <p>
+        En Claude Code los nativos de OpenSpec son <code>/opsx:propose</code> y <code>/opsx:apply</code>
+        (con dos puntos). En Cursor son <code>/opsx-propose</code> y <code>/opsx-apply</code> (con guion).
+        No uses <code>/ospx-*</code>.
+      </p>
+    </section>
+
+    <section id="postman">
+      <h2>10. Postman — unirse al team (backend)</h2>
+      <p>
+        Los de backend tienen que estar en el team de Postman del producto para probar las APIs con la colección compartida.
+        Frontend no lo necesita para el flujo del kit.
+      </p>
+      <p>
+        <a class="btn" href="https://app.getpostman.com/join-team?invite_code=78e04386d5f2361741d77210d7ca30fe3b6c6a1222310daf7ba125371ad9779b&amp;target_code=f1f83e3ac0ef46b48d3a47a823b156d0" target="_blank" rel="noopener">Unirme al team de Postman</a>
+      </p>
+      <ol class="steps">
+        <li>Instalá Postman de escritorio desde <a href="https://www.postman.com/downloads/" target="_blank" rel="noopener">postman.com/downloads</a>, o usá la web app.</li>
+        <li>Entrá con tu cuenta (Google o email de trabajo). Si no tenés cuenta, creala en esa misma pantalla.</li>
+        <li>Abrí el link de invitación de arriba. Tiene que verse el team al que te están invitando.</li>
+        <li>Aceptá la invitación. Si el link expiró, pedí uno nuevo a quien administra el team.</li>
+        <li>En la barra lateral, cambiá el workspace al del equipo (no te quedes en <em>My Workspace</em> personal).</li>
+        <li>Ahí están las colecciones y environments compartidos. Elegí el environment del ambiente que vas a pegarle (dev / QA / local).</li>
+        <li>Antes de mandar requests, revisá variables: base URL, token o cookie de sesión. No commitees secretos ni los pegues en el chat del kit.</li>
+        <li>Cuando pruebes un endpoint de tu tarea, usá la request de la colección si existe. Si no existe, creala en el workspace del team, no en uno privado.</li>
+      </ol>
+      <div class="note">
+        <strong>Relación con el kit</strong>
+        Postman no lo instala el setup. Es la herramienta para ejercitar las APIs del backend mientras desarrollás.
+        El kit no publica requests ni cambia el Work Item desde Postman.
+      </div>
+    </section>
+
+    <section id="problemas">
+      <h2>11. Problemas frecuentes</h2>
+      <table>
+        <thead>
+          <tr><th>Síntoma</th><th>Qué hacer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>npm.ps1 no está firmado</code></td>
+            <td>Usá <code>npm.cmd</code> y <code>openspec.cmd</code>.</td>
+          </tr>
+          <tr>
+            <td><code>/opsx-propose</code> no está instalado</td>
+            <td>Falta <code>openspec.cmd init --tools claude,cursor</code> en ese repo. Reiniciá Cursor.</td>
+          </tr>
+          <tr>
+            <td><code>/work-item</code> no cambia de rama</td>
+            <td>Working tree sucio, o no existe <code>sandbox</code> / <code>origin/sandbox</code>. Limpiá o hacé pull de sandbox.</td>
+          </tr>
+          <tr>
+            <td>No lee Azure</td>
+            <td><code>az login</code>, y que exista <code>.cursor/mcp.json</code> con <code>ado-developer</code>. En backend, si ese archivo se perdió, volvé a correr setup.</td>
+          </tr>
+          <tr>
+            <td>Doctor marca OpenSpec no instalado</td>
+            <td>El CLI no está en PATH de esa terminal, o no corriste <code>init</code>. Después del init, opcional: <code>node dist/cli.js update --target ...</code> para refrescar <code>.ai/openspec-commands.json</code>.</td>
+          </tr>
+          <tr>
+            <td>Security <code>NOT_AVAILABLE</code></td>
+            <td>Falta la skill <code>security-compliance</code> en <code>%USERPROFILE%\.cursor\skills\</code>.</td>
+          </tr>
+          <tr>
+            <td>No aparecen las skills en Cursor</td>
+            <td>Abriste el kit en vez del repo de producto, o hace falta recargar la ventana. Las skills viven en <code>.cursor/skills</code> del backend o frontend.</td>
+          </tr>
+        </tbody>
+      </table>
+      <h3>Checklist mínimo antes de la primera tarea</h3>
+      <ol class="steps">
+        <li>Node ≥ 20.19, Git, Cursor.</li>
+        <li>Kit clonado y <code>npm.cmd run build</code>.</li>
+        <li>Repos BE y FE en <code>sandbox</code>.</li>
+        <li><code>npm.cmd install -g @fission-ai/openspec</code>.</li>
+        <li><code>az login</code>.</li>
+        <li>Setup del kit en el repo con el rol correcto.</li>
+        <li><code>openspec.cmd init --tools claude,cursor</code> en ese repo.</li>
+        <li>Reiniciar Cursor y abrir el repo de la tarea.</li>
+        <li>Backend: unirse al team de Postman.</li>
+      </ol>
+    </section>
+
+    <footer>
+      Developer AI Kit v1.0.0 · Org Azure DMEDLATSYS · Proyecto NCSLite · No versionar PAT ni tokens.
+    </footer>
+  </div>
+</body>
+</html>
