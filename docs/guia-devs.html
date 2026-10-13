@@ -147,6 +147,7 @@
         y trabajar una tarea de Azure de punta a punta. Incluye Postman (backend) y la extensión Jam para grabar.
       </p>
       <nav>
+        <a href="#ya-instalado">Si ya lo tenías instalado</a>
         <a href="#que-es">1. Qué es este kit</a>
         <a href="#requisitos">2. Requisitos de la máquina</a>
         <a href="#claude">2.5 Claude (Disney o descarga pública)</a>
@@ -166,6 +167,41 @@
         <a href="#problemas">15. Problemas frecuentes</a>
       </nav>
     </header>
+
+    <section id="ya-instalado">
+      <h2>Si ya lo tenías instalado</h2>
+      <p>
+        No vuelvas a clonar los repos, no hagas <code>setup</code> de nuevo, no desinstales y no uses
+        <code>npm link</code>. OpenSpec, Postman y Jam se quedan como están.
+        Solo hay que <strong>actualizar el kit en tu máquina</strong> y <strong>correr <code>update</code></strong>
+        en backend y frontend. Eso reescribe el MCP a <code>@azure-devops/mcp@2.10.0</code> y deja
+        la ruta real del CLI en <code>CLAUDE.md</code> y las skills (adiós a <code>npx team-ai</code> y al pin <code>1.4.0</code>).
+      </p>
+      <p>Ajustá las rutas si tu clon no está en el ejemplo. Todo se corre desde la carpeta del kit:</p>
+<pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
+git pull
+npm.cmd install
+npm.cmd run build
+
+node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWebCore.Backend --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWeb.Frontend --role frontend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pre>
+      <div class="ok">
+        <strong>Listo cuando</strong>
+        <code>doctor</code> muestra <em>CLI del kit resoluble</em> y <em>MCP versión fijada</em> en OK, con
+        <code>@azure-devops/mcp@2.10.0</code>. El rojo de “MCP autenticado” es normal.
+        Cerrá y reabrí Cursor o Claude Code en el <em>repo de producto</em> (no el kit) y probá <code>/work-item</code>.
+      </div>
+      <div class="note">
+        <strong>Si parcheaste <code>.mcp.json</code> a mano</strong>
+        <code>update</code> lo vuelve a escribir con <code>2.10.0</code>: está bien, es el valor correcto.
+        Si habías hecho <code>npm link</code>, podés dejarlo: el agente ya no lo necesita.
+        Detalle del flujo de update: <a href="#actualizar-kit">sección 8</a>.
+      </div>
+    </section>
 
     <section id="que-es">
       <h2>1. Qué es este kit</h2>
@@ -616,6 +652,10 @@ npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code></pre>
 
     <section id="instalar">
       <h2>7. Instalar el kit en cada repo</h2>
+      <div class="warn">
+        <strong>¿Ya corriste setup en esta máquina?</strong>
+        No repitas esta sección. Andá a <a href="#ya-instalado">Si ya lo tenías instalado</a>.
+      </div>
       <p>Siempre desde la carpeta del kit, apuntando <code>--target</code> al repo de producto. Org y proyecto de Azure son fijos para este equipo:</p>
       <ul>
         <li>Organización: <code>DMEDLATSYS</code></li>
@@ -685,6 +725,11 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
 
     <section id="actualizar-kit">
       <h2>8. Actualizar el Developer AI Kit</h2>
+      <p>
+        Si el kit <strong>ya estaba instalado</strong> y <code>/work-item</code> fallaba (MCP <code>1.4.0</code> o
+        <code>npx team-ai</code>), el procedimiento corto está arriba: <a href="#ya-instalado">Si ya lo tenías instalado</a>.
+        Esta sección es el mismo flujo, con más detalle, para cualquier actualización futura del kit.
+      </p>
       <p>
         El kit vive en un repo aparte (<code>developer-ai-kit</code>). Los repos de backend y frontend
         <strong>no</strong> traen el kit por Git: cada máquina tiene una copia del repo del kit y el CLI escribe
