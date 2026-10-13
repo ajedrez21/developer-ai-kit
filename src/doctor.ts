@@ -2,10 +2,11 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { WRITE_TOOLS } from "./mcp.js";
+import { AZURE_MCP_PINNED, MCP_SERVER_NAME, WRITE_TOOLS } from "./mcp.js";
 import { discoverOpenSpec } from "./openspec.js";
 import { loadManifest } from "./policy.js";
-import { KIT_VERSION } from "./kit-root.js";
+import { KIT_VERSION, kitCliPath, posixPath } from "./kit-root.js";
+import type { KitManifest } from "./types.js";
 
 export type DoctorLevel = "installed" | "available" | "authenticated" | "authorized" | "not_configured" | "limitation";
 
@@ -25,7 +26,7 @@ export function doctor(target: string): { checks: DoctorCheck[]; summary: string
     title: "Kit instalado",
     level: manifest ? "installed" : "not_configured",
     ok: Boolean(manifest),
-    detail: manifest ? `v${manifest.kitVersion} (core ${KIT_VERSION})` : "Falta .ai/kit-manifest.json. Ejecutar team-ai setup.",
+    detail: manifest ? `v${manifest.kitVersion} (core ${KIT_VERSION})` : "Falta .ai/kit-manifest.json. Ejecutar setup del kit.",
   });
   if (manifest && manifest.kitVersion !== KIT_VERSION) {
     checks.push({
@@ -33,7 +34,7 @@ export function doctor(target: string): { checks: DoctorCheck[]; summary: string
       title: "Drift de versión",
       level: "limitation",
       ok: false,
-      detail: `Instalada ${manifest.kitVersion}, disponible ${KIT_VERSION}. Ejecutar team-ai update.`,
+      detail: `Instalada ${manifest.kitVersion}, disponible ${KIT_VERSION}. Ejecutar update del kit.`,
     });
   }
   checks.push(runtime("node", process.version, ">=20.19.0", Number(process.versions.node.split(".")[0]) >= 20));
@@ -69,6 +70,9 @@ export function doctor(target: string): { checks: DoctorCheck[]; summary: string
     ok: mcpCursor || mcpClaude,
     detail: `Cursor .cursor/mcp.json=${mcpCursor}; Claude .mcp.json=${mcpClaude}. Autenticación: az cli / OAuth del usuario, nunca en el repo.`,
   });
+  checks.push(cliResolvable(manifest));
+  checks.push(mcpPin(target));
+  checks.push(mcpPackagePublished());
   checks.push({
     id: "mcp-auth",
     title: "MCP autenticado",
@@ -122,5 +126,85 @@ function binary(name: string, args: string[]): DoctorCheck {
     level: ok ? "installed" : "not_configured",
     ok,
     detail: ok ? (result.stdout || "").trim() : `${name} no disponible`,
+  };
+}
+
+function cliResolvable(manifest: KitManifest | null): DoctorCheck {
+  const corePath = manifest?.source.corePath;
+  const cli = corePath ? kitCliPath(corePath) : null;
+  const ok = Boolean(cli && existsSync(cli));
+  return {
+    id: "cli-resolvable",
+    title: "CLI del kit resoluble",
+    level: ok ? "installed" : "not_configured",
+    ok,
+    detail: ok
+      ? `node "${posixPath(cli!)}"`
+      : corePath
+        ? `No existe dist/cli.js en ${corePath}. Compilá el kit (npm run build) o corré setup de nuevo.`
+        : "Falta source.corePath en el manifiesto. Ejecutar setup.",
+  };
+}
+
+function mcpPin(target: string): DoctorCheck {
+  const files = [join(".cursor", "mcp.json"), ".mcp.json"];
+  const hits: string[] = [];
+  let seen = 0;
+  let pinned = 0;
+  for (const rel of files) {
+    const abs = join(target, rel);
+    if (!existsSync(abs)) continue;
+    try {
+      const json = JSON.parse(readFileSync(abs, "utf8")) as {
+        mcpServers?: Record<string, { args?: unknown }>;
+      };
+      const args = json.mcpServers?.[MCP_SERVER_NAME]?.args;
+      if (!Array.isArray(args)) continue;
+      seen += 1;
+      const list = args.map(String);
+      const hasPin = list.includes(AZURE_MCP_PINNED);
+      if (hasPin) pinned += 1;
+      const found = list.find((item) => item.includes("@azure-devops/mcp")) ?? "sin paquete";
+      hits.push(`${posixPath(rel)}: ${hasPin ? AZURE_MCP_PINNED : found}`);
+    } catch {
+      hits.push(`${posixPath(rel)}: JSON no parseable`);
+    }
+  }
+  const ok = seen > 0 && pinned === seen;
+  return {
+    id: "mcp-pin",
+    title: "MCP versión fijada",
+    level: ok ? "installed" : "not_configured",
+    ok,
+    detail: hits.length ? hits.join("; ") : `No hay mcp.json. Se espera ${AZURE_MCP_PINNED}.`,
+  };
+}
+
+function mcpPackagePublished(): DoctorCheck {
+  const npm = process.platform === "win32" ? "npm.cmd" : "npm";
+  const result = spawnSync(npm, ["view", AZURE_MCP_PINNED, "version"], {
+    encoding: "utf8",
+    windowsHide: true,
+    timeout: 8000,
+  });
+  const err = `${result.stderr ?? ""}${result.error?.message ?? ""}`.trim();
+  const missing = /ETARGET|No matching version|E404/i.test(err);
+  if (result.error || result.status !== 0) {
+    return {
+      id: "mcp-package",
+      title: "MCP publicado en npm",
+      level: missing ? "not_configured" : "limitation",
+      ok: !missing,
+      detail: missing
+        ? `${AZURE_MCP_PINNED} no existe en npm.`
+        : `No se pudo consultar npm (${err.slice(0, 160) || "timeout/offline"}). Pin local: ${AZURE_MCP_PINNED}.`,
+    };
+  }
+  return {
+    id: "mcp-package",
+    title: "MCP publicado en npm",
+    level: "installed",
+    ok: true,
+    detail: `npm view → ${(result.stdout || "").trim() || AZURE_MCP_PINNED}`,
   };
 }

@@ -8,7 +8,7 @@
     "verify": "only if expanded profile installed"
   },
   "azureDevOpsMcp": {
-    "package": "@azure-devops/mcp@1.4.0",
+    "package": "@azure-devops/mcp@2.10.0",
     "remote": "https://mcp.dev.azure.com/{organization}",
     "developerDomains": ["core", "work", "work-items", "repositories"]
   },

@@ -25,7 +25,7 @@ Delante delimitá el alcance (archivos del change, Work Item, fingerprint) **sin
 ## Después del runner
 
 1. Verificá working tree antes/después (`git status --porcelain`).
-2. Normalizá con `team-ai security-normalize` o `security-review`. Si el JSON es ilegible/incompleto → **FAIL**, nunca PASS por «no se encontraron findings».
+2. Normalizá con `node "<kit>/dist/cli.js" security-normalize` o `node "<kit>/dist/cli.js" security-review`. Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. Si el JSON es ilegible/incompleto → **FAIL**, nunca PASS por «no se encontraron findings».
 3. Preservá el documento original; el JSON del kit es derivado.
 4. Guardá `.ai/security/<org-project-id>/<repo-id>/review-NNN.md|json` y `latest.json` (puntero, no reemplaza historial).
 5. Atribución INTRODUCED requiere comparación con base; si no, `UNKNOWN` y REVIEW.

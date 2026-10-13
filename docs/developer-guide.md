@@ -26,4 +26,4 @@ Si el TL exportó `work-context.json`, pasalo. Si no, el kit arma contexto desde
 `/commit-change 3215 --preview` luego `/commit-change 3215`. No hay push.  
 `/pr-ready 3215` exporta `work-result-<repo>.json`. El PR se crea solo si lo pedís.
 
-Scripts determinísticos: `node dist/cli.js doctor|verify|fingerprint|pr-ready`.
+Scripts determinísticos: el CLI está en `source.corePath` de `.ai/kit-manifest.json` (`node "<corePath>/dist/cli.js" doctor|verify|fingerprint|pr-ready`). No uses `npx team-ai`.

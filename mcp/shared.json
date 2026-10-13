@@ -1,7 +1,7 @@
 {
   "schemaVersion": "team-ai/v1",
   "profile": "developer-read",
-  "package": "@azure-devops/mcp@1.4.0",
+  "package": "@azure-devops/mcp@2.10.0",
   "authentication": {
     "cursor": "OAuth o env AZURE_DEVOPS_ORG + Azure CLI (`--authentication azcli`). Interpolación: ${env:AZURE_DEVOPS_ORG}. No guardar PAT en mcp.json.",
     "claude": "Azure CLI o login interactivo del MCP. El org se escribe en args; Claude no interpola ${env:} igual que Cursor. Setup --org o placeholder ${AZURE_DEVOPS_ORG}."

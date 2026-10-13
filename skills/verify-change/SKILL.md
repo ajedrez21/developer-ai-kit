@@ -8,7 +8,8 @@ disable-model-invocation: true
 
 ## Pasos
 
-1. Ejecutá `node <kit>/dist/cli.js verify --target . --id <id>`.
+1. Ejecutá `node "<kit>/dist/cli.js" verify --target . --id <id>`.
+   Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. No uses `npx team-ai`.
 2. Completá criterios de aceptación con evidencia de código/tests (el script no los marca PASS solo).
 3. Estados de check: `PASS|FAIL|REVIEW|NOT_RUN|NOT_AVAILABLE|STALE`. Ausencia de herramienta **nunca** es PASS.
 4. Check no aplicable: registrá motivo de applicability; no es fallo de configuración.

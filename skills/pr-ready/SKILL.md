@@ -6,7 +6,8 @@ disable-model-invocation: true
 
 # /pr-ready `<id>`
 
-Ejecutá `team-ai pr-ready --target . --id <id>`.
+Ejecutá `node "<kit>/dist/cli.js" pr-ready --target . --id <id>`.
+Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. No uses `npx team-ai`.
 
 `READY` exige: contexto actualizado y plan aprobado; OpenSpec completo; scope justificado; sin cambios ajenos ni secretos; verify y security vigentes; rama según convención; commits con referencia Azure; working tree limpio (outputs `.ai/` permitidos); contratos cumplidos.
 

@@ -1,6 +1,8 @@
 export const MCP_SERVER_NAME = "ado-developer";
 export const AZURE_MCP_PACKAGE = "@azure-devops/mcp";
-export const AZURE_MCP_PINNED = "@azure-devops/mcp@1.4.0";
+/** 1.4.0 nunca se publicó. 2.10.0 tiene --authentication azcli, -d/--domains y las tools del kit. */
+export const AZURE_MCP_VERSION = "2.10.0";
+export const AZURE_MCP_PINNED = `${AZURE_MCP_PACKAGE}@${AZURE_MCP_VERSION}`;
 
 export const DEVELOPER_DOMAINS = ["core", "work", "work-items", "repositories"] as const;
 

@@ -144,20 +144,26 @@
       <h1>Cómo instalar y usar el kit en Backend y Frontend</h1>
       <p class="lede">
         Guía para unirse a los repos, instalar las herramientas externas, cargar el kit en cada proyecto
-        y trabajar una tarea de Azure de punta a punta. Incluye el alta al team de Postman para backend.
+        y trabajar una tarea de Azure de punta a punta. Incluye Postman (backend) y la extensión Jam para grabar.
       </p>
       <nav>
         <a href="#que-es">1. Qué es este kit</a>
         <a href="#requisitos">2. Requisitos de la máquina</a>
+        <a href="#claude">2.5 Claude (Disney o descarga pública)</a>
         <a href="#powershell">3. PowerShell y npm.cmd</a>
         <a href="#bajar">4. Bajar los repositorios</a>
         <a href="#externos">5. Paquetes y herramientas externas</a>
-        <a href="#instalar">6. Instalar el kit en cada repo</a>
-        <a href="#verificar">7. Verificar la instalación</a>
-        <a href="#usar">8. Cómo usar el kit (flujo diario)</a>
-        <a href="#comandos">9. Qué hace cada comando</a>
-        <a href="#postman">10. Postman (solo backend)</a>
-        <a href="#problemas">11. Problemas frecuentes</a>
+        <a href="#mcp">6. MCP de Azure DevOps</a>
+        <a href="#instalar">7. Instalar el kit en cada repo</a>
+        <a href="#cli-agente">7.3 CLI que usa el agente</a>
+        <a href="#actualizar-kit">8. Actualizar el Developer AI Kit</a>
+        <a href="#verificar">9. Verificar la instalación</a>
+        <a href="#usar">10. Cómo usar el kit (flujo diario)</a>
+        <a href="#comandos">11. Qué hace cada comando</a>
+        <a href="#postman">12. Postman (solo backend)</a>
+        <a href="#backend-local">13. Backend local y config (BD)</a>
+        <a href="#jam">14. Jam (grabar videos)</a>
+        <a href="#problemas">15. Problemas frecuentes</a>
       </nav>
     </header>
 
@@ -185,6 +191,72 @@
 
     <section id="requisitos">
       <h2>2. Requisitos de la máquina</h2>
+      <p>
+        Azure no se conecta “solo con el JSON”. Cursor arranca el MCP con <code>npx</code>, que viene con Node,
+        y el servidor entra a DevOps con el token de Azure CLI. Si falta uno de esa cadena, <code>/work-item</code> no lee la tarea.
+      </p>
+
+      <h3>2.1 Cadena para que Azure ande</h3>
+      <ol class="steps">
+        <li><strong>Node.js 20.19 o más</strong> (LTS 20 o 22), con npm y npx en el PATH.</li>
+        <li><strong>Azure CLI</strong> instalado y también en el PATH.</li>
+        <li><strong><code>az login</code></strong> con la cuenta que ve el proyecto <code>NCSLite</code> en la org <code>DMEDLATSYS</code>.</li>
+        <li><strong>Permiso en Azure DevOps</strong> de lectura de Work Items (y repos, para PRs).</li>
+        <li><strong><code>.cursor/mcp.json</code></strong> con <code>ado</code> y <code>ado-developer</code> (sección 6), servidores habilitados en Cursor.</li>
+        <li><strong>Internet</strong> la primera vez: <code>npx</code> baja <code>@azure-devops/mcp@2.10.0</code>.</li>
+      </ol>
+      <div class="warn">
+        <strong>Orden y PATH</strong>
+        Instalá Node y Azure CLI <em>antes</em> de abrir Cursor o Claude Code. Si el host ya estaba abierto, cerralo por completo
+        (no solo la ventana) y volvé a entrar: si no, no ve <code>node</code> ni <code>npx</code> recién instalados.
+        Si trabajás solo con Claude Code, no hace falta reiniciar Cursor.
+      </div>
+
+      <h3>2.2 Instalar Node.js</h3>
+      <p>
+        Bajá el LTS desde <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a> (20.19+ o 22).
+        En el instalador de Windows marcá <strong>Add to PATH</strong>.
+        No uses una versión 18 o menor: el kit pide <code>&gt;= 20.19.0</code> y el MCP corre con Node.
+      </p>
+      <p>Cerrá la terminal, abrí una nueva y comprobá las tres cosas. En PowerShell usá <code>npm.cmd</code> / <code>npx.cmd</code> (sección 3):</p>
+<pre><code>node -v
+npm.cmd -v
+npx.cmd -v
+where.exe node
+where.exe npx</code></pre>
+      <p>
+        <code>node -v</code> tiene que ser v20.19 o más. <code>where.exe node</code> tiene que mostrar una ruta tipo
+        <code>C:\Program Files\nodejs\node.exe</code>. Si dice que no encuentra el archivo, Node no está en el PATH: reinstalá marcando Add to PATH o agregá <code>C:\Program Files\nodejs\</code> a las variables de entorno y reiniciá Windows (o al menos Cursor y la terminal).
+      </p>
+
+      <h3>2.3 Instalar Azure CLI</h3>
+      <p>
+        Es un programa aparte de Node. Sin esto, el MCP arranca pero no se autentica:
+        <code>ado-developer</code> usa <code>--authentication azcli</code>.
+      </p>
+      <ul>
+        <li>Instalador: <a href="https://aka.ms/installazurecliwindows" target="_blank" rel="noopener">aka.ms/installazurecliwindows</a></li>
+        <li>O en una terminal elevada: <code>winget install -e --id Microsoft.AzureCLI</code></li>
+        <li>Documentación: <a href="https://learn.microsoft.com/cli/azure/install-azure-cli-windows" target="_blank" rel="noopener">Install Azure CLI on Windows</a></li>
+      </ul>
+      <p>Cerrá la terminal, abrí otra y comprobá:</p>
+<pre><code>az --version
+az login
+az account show</code></pre>
+      <p>
+        <code>az login</code> abre el navegador. Entrá con la <strong>misma cuenta</strong> con la que entrás a
+        <a href="https://dev.azure.com/DMEDLATSYS" target="_blank" rel="noopener">dev.azure.com/DMEDLATSYS</a>
+        y ves el proyecto <code>NCSLite</code>.
+        <code>az account show</code> tiene que devolver un JSON con tu user, no un error de “please run az login”.
+      </p>
+      <div class="note">
+        <strong>Permisos</strong>
+        No alcanza con tener Node. La cuenta tiene que poder leer Work Items de <code>NCSLite</code>.
+        Si Git clona el repo pero Azure DevOps te niega el work item, pedí acceso al proyecto.
+        No uses un PAT en <code>mcp.json</code>.
+      </div>
+
+      <h3>2.4 El resto de la máquina</h3>
       <table>
         <thead>
           <tr><th>Herramienta</th><th>Para qué</th><th>Cómo comprobar</th></tr>
@@ -193,36 +265,110 @@
           <tr>
             <td>Git</td>
             <td>Clonar repos y crear ramas</td>
-            <td><code>git --version</code></td>
+            <td><code>git --version</code> — <a href="https://git-scm.com/download/win" target="_blank" rel="noopener">git-scm.com</a></td>
           </tr>
           <tr>
-            <td>Node.js 20.19 o superior</td>
-            <td>CLI del kit, OpenSpec y MCP de Azure</td>
-            <td><code>node -v</code></td>
+            <td>Cursor y/o Claude</td>
+            <td>Chat de las skills y arranque del MCP</td>
+            <td>Ver <a href="#claude">sección 2.5</a>. Abrir el <em>repo de producto</em>, no el kit</td>
           </tr>
           <tr>
-            <td>Cursor (o Claude Code)</td>
-            <td>Chat donde corren las skills <code>/work-*</code></td>
-            <td>Abrir el repo como carpeta del proyecto</td>
+            <td>SSH o HTTPS a Azure Repos</td>
+            <td>Clonar backend y frontend</td>
+            <td><code>git ls-remote git@ssh.dev.azure.com:v3/DMEDLATSYS/NCSLite/NWebCore.Backend</code></td>
           </tr>
           <tr>
-            <td>Acceso Azure DevOps</td>
-            <td>Org <code>DMEDLATSYS</code>, proyecto <code>NCSLite</code></td>
-            <td>SSH o HTTPS al repo; login de Azure CLI</td>
-          </tr>
-          <tr>
-            <td>.NET SDK (backend)</td>
-            <td>Compilar <code>NWebCore.Backend.csproj</code></td>
+            <td>.NET SDK (solo backend)</td>
+            <td>Compilar y el gate de verify</td>
             <td><code>dotnet --version</code></td>
           </tr>
         </tbody>
       </table>
+      <p>Comprobación rápida de que la cadena Azure está lista (copiá y pegá en PowerShell):</p>
+<pre><code>node -v
+npx.cmd --yes @azure-devops/mcp@2.10.0 --help
+az account show --query user.name -o tsv</code></pre>
       <p>
-        Node se baja de <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a> (LTS 20 o 22).
-        Git, de <a href="https://git-scm.com/download/win" target="_blank" rel="noopener">git-scm.com</a>.
-        Azure CLI, de
-        <a href="https://learn.microsoft.com/cli/azure/install-azure-cli-windows" target="_blank" rel="noopener">Microsoft Learn</a>.
+        Si Node responde versión, npx muestra ayuda del paquete MCP y <code>az account show</code> imprime tu usuario,
+        la máquina está lista para la sección 6 (pegar el JSON y habilitar MCP en Cursor).
       </p>
+
+      <h3 id="claude">2.5 Instalar Claude</h3>
+      <p>
+        El kit corre igual en <strong>Cursor</strong> y en <strong>Claude Code</strong> (escritorio o integrado en la app de Claude).
+        En una PC de Disney el instalador y el login van por el portal interno de Anthropic.
+        Si la máquina no es de Disney, se usa la descarga pública.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Tu PC</th><th>De dónde instalar</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><strong>PC Disney</strong> (cuenta corporativa, equipo de la empresa)</td>
+            <td>
+              Portal interno Anthropic / Claude:
+              <a href="https://twdc.sharepoint.com/sites/ETAnthropic/SitePages/Home.aspx?csf=1&amp;web=1&amp;e=HycjVd&amp;isSPOFile=1&amp;ovuser=56b731a8-a2ac-4c32-bf6b-616810e913c6%2cGarrett.Smith%40disney.com&amp;TeamsCID=a410feac-50fb-44a7-8eeb-16939d8e03d2&amp;OR=Teams-HL&amp;CT=1791777153610&amp;clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA5MTcxMjIyMiIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3d%3d&amp;CID=a70644a2-308a-f000-61cf-3ed85bff3500&amp;cidOR=SPO" target="_blank" rel="noopener">SharePoint ETAnthropic</a>
+            </td>
+          </tr>
+          <tr>
+            <td><strong>PC que no es Disney</strong></td>
+            <td>
+              <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a>
+              — botón <strong>Windows</strong> (o Windows ARM64 si aplica).
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        <a class="btn" href="https://twdc.sharepoint.com/sites/ETAnthropic/SitePages/Home.aspx?csf=1&amp;web=1&amp;e=HycjVd&amp;isSPOFile=1&amp;ovuser=56b731a8-a2ac-4c32-bf6b-616810e913c6%2cGarrett.Smith%40disney.com&amp;TeamsCID=a410feac-50fb-44a7-8eeb-16939d8e03d2&amp;OR=Teams-HL&amp;CT=1791777153610&amp;clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiI0OS8yNjA5MTcxMjIyMiIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3d%3d&amp;CID=a70644a2-308a-f000-61cf-3ed85bff3500&amp;cidOR=SPO" target="_blank" rel="noopener">Claude — PC Disney (SharePoint)</a>
+        <a class="btn" href="https://claude.com/es/download" target="_blank" rel="noopener">Claude — descarga pública</a>
+      </p>
+
+      <div class="ok">
+        <strong>Cómo abrir Claude para trabajar (video)</strong>
+        Después de instalar y loguearte con tu email Disney (o la cuenta que corresponda), mirá este recorrido en Jam:
+        abrir la app, iniciar sesión y dejar listo el entorno para usar el repo con el kit.
+        <br><br>
+        <a class="btn" href="https://jam.dev/c/acf66fbf-b022-4938-a9bd-6c22a6ae8d61" target="_blank" rel="noopener">Ver video: abrir Claude para trabajar</a>
+      </div>
+
+      <p><strong>Si la PC es de Disney</strong></p>
+      <ol class="steps">
+        <li>Conectate a la red o VPN de Disney si el SharePoint lo pide.</li>
+        <li>Abrí el <a href="https://twdc.sharepoint.com/sites/ETAnthropic/SitePages/Home.aspx" target="_blank" rel="noopener">sitio ETAnthropic</a> con tu cuenta <code>@disney.com</code> (o la que use el equipo).</li>
+        <li>En esa página están el instalador aprobado, el plan y el login SSO. Seguì las instrucciones del portal: no bajes Claude del sitio público en una máquina corporativa si el equipo pide el paquete interno.</li>
+        <li>Instalá el build de <strong>Windows</strong> que indiquen ahí (escritorio). Si ofrecen también Claude Code / terminal, instalalo: el kit deja skills en <code>.claude/skills</code>.</li>
+        <li>
+          <strong>Logueate con tu email de Disney</strong> (cuenta corporativa, por ejemplo <code>nombre.apellido@disney.com</code>)
+          cuando Claude o el portal pidan iniciar sesión. Usá SSO / “Sign in with Microsoft” si aparece.
+          No uses Gmail ni una cuenta personal de Anthropic.
+        </li>
+        <li>Abrí la carpeta del repo de producto (backend o frontend). Las skills <code>/work-item</code> y el MCP <code>.mcp.json</code> se descubren desde esa carpeta.</li>
+      </ol>
+
+      <p><strong>Si la PC no es de Disney</strong></p>
+      <ol class="steps">
+        <li>Entrá a <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a>.</li>
+        <li>En Escritorio, clic en <strong>Windows</strong> (o <strong>Windows (arm 64)</strong> si la máquina es ARM). No uses el de macOS.</li>
+        <li>Ejecutá el instalador y completá el asistente.</li>
+        <li>Abrí Claude e iniciá sesión con la cuenta del plan (Free, Pro, Max, Team o Enterprise). Claude Code en escritorio suele pedir un plan de pago.</li>
+        <li>Si vas a usar Claude Code desde el escritorio, está incluido en la app; también podés instalar la extensión de VS Code / Cursor desde la misma página, sección “Entornos de Claude Code”.</li>
+        <li>Abrí el repo de producto. Confirmá que existan <code>.claude/skills</code> y <code>.mcp.json</code> (los crea el setup del kit).</li>
+      </ol>
+      <div class="note">
+        <strong>Cursor y Claude juntos</strong>
+        El setup del kit instala hosts <code>claude,cursor</code>. Podés trabajar en cualquiera de los dos
+        sobre el mismo repo. En Claude los nativos de OpenSpec son <code>/opsx:propose</code> y <code>/opsx:apply</code>
+        (con dos puntos). No hace falta elegir uno solo.
+      </div>
+      <div class="warn">
+        <strong>No mezcles el canal</strong>
+        PC Disney → SharePoint interno e inicio de sesión con <strong>email Disney</strong>.
+        PC personal o no corporativa →
+        <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a> con la cuenta que corresponda a ese plan.
+        Si el instalador público está bloqueado por política, usá solo el portal Disney.
+      </div>
     </section>
 
     <section id="powershell">
@@ -250,7 +396,9 @@ npm.cmd install
 npm.cmd run build</code></pre>
       <p>
         <code>npm run build</code> deja el CLI en <code>dist/cli.js</code>. Sin ese build, el setup no corre.
-        El kit no se “instala” como app: se usa desde esta carpeta para configurarlo en cada repo de producto.
+        El kit no se “instala” como app ni como dependencia de backend/frontend: se usa desde esta carpeta.
+        El setup escribe esa ruta absoluta en <code>CLAUDE.md</code>, <code>AGENTS.md</code> y las skills (ver <a href="#cli-agente">sección 7.3</a>).
+        No hace falta <code>npm link</code> ni <code>npx team-ai</code>.
       </p>
 
       <h3>4.2 Backend y frontend (repos de producto)</h3>
@@ -284,15 +432,8 @@ git pull</code></pre>
 openspec.cmd --version</code></pre>
       <p>Tiene que mostrar una versión (en el equipo se validó <code>1.14.1</code>).</p>
 
-      <h3>5.2 Azure CLI (login para el MCP de Azure DevOps)</h3>
-      <p>El kit lee Work Items por el servidor MCP <code>ado-developer</code>, autenticado con Azure CLI. No se guardan PAT en el repo.</p>
-<pre><code>az --version
-az login
-az account show</code></pre>
-      <p>
-        Si <code>az</code> no existe, instalá Azure CLI y volvé a abrir la terminal.
-        El login abre el navegador de la cuenta con la que accedés a <code>DMEDLATSYS</code>.
-      </p>
+      <h3>5.2 Azure CLI</h3>
+      <p>Instalación, PATH y <code>az login</code> están en la <a href="#requisitos">sección 2.3</a>. El JSON del MCP, en la <a href="#mcp">sección 6</a>.</p>
 
       <h3>5.3 Skill de seguridad <code>security-compliance</code></h3>
       <p>
@@ -319,22 +460,176 @@ openspec.cmd init --tools claude,cursor --profile core --no-animation</code></pr
       </div>
     </section>
 
+    <section id="mcp">
+      <h2>6. MCP de Azure DevOps — instalarlo y pegar la conexión</h2>
+      <p>
+        Cursor habla con Azure DevOps por un servidor MCP. En este equipo hay <strong>dos entradas</strong>
+        que hay que dejar en el repo:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Nombre</th><th>Dónde está hoy</th><th>Para qué</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>ado</code></td>
+            <td>Backend, <code>.cursor/mcp.json</code></td>
+            <td>Conexión del equipo: org <code>DMEDLATSYS</code>, proyecto <code>NCSLite</code>, team <code>NCSLite Team</code>. Mismo paquete fijado <code>@azure-devops/mcp@2.10.0</code>. Dominios <code>core</code>, <code>work</code>, <code>work-items</code>.</td>
+          </tr>
+          <tr>
+            <td><code>ado-developer</code></td>
+            <td>Frontend Cursor, y Claude en ambos (<code>.mcp.json</code>)</td>
+            <td>Perfil del kit: paquete fijado <code>@azure-devops/mcp@2.10.0</code>, login con Azure CLI, más el dominio <code>repositories</code> (PRs). Es el que usa <code>/work-item</code>.</td>
+          </tr>
+        </tbody>
+      </table>
+      <p>
+        Poné <strong>las dos</strong> en backend y frontend. El setup del kit agrega <code>ado-developer</code> y no borra <code>ado</code> si ya estaba.
+      </p>
+
+      <h3>6.1 Antes del JSON: Node + Azure CLI</h3>
+      <p>
+        El archivo <code>mcp.json</code> no instala nada por sí solo. Cursor ejecuta
+        <code>npx -y @azure-devops/mcp@2.10.0 DMEDLATSYS --authentication azcli ...</code>.
+        Eso exige lo de la <a href="#requisitos">sección 2</a>:
+      </p>
+      <ul>
+        <li><code>node</code> y <code>npx</code> en el PATH (Node 20.19+).</li>
+        <li><code>az</code> en el PATH y sesión hecha con <code>az login</code>.</li>
+        <li>La cuenta con acceso de lectura a <code>DMEDLATSYS</code> / <code>NCSLite</code>.</li>
+      </ul>
+      <p>Si todavía no lo hiciste:</p>
+<pre><code>node -v
+npx.cmd -v
+az --version
+az login
+az account show</code></pre>
+      <p><strong>No pegues un PAT en <code>mcp.json</code> ni en Git.</strong> Cerrá Cursor por completo y volvé a abrirlo después de instalar Node o Azure CLI.</p>
+
+      <h3>6.2 Instalar el paquete MCP (Node / npm)</h3>
+      <p>
+        No hace falta un <code>npm install</code> dentro del repo de producto. Cursor usa <code>npx -y</code> y baja
+        <code>@azure-devops/mcp@2.10.0</code> al cache de npm la primera vez (puede tardar 30–60 s y necesita red).
+        Si querés dejarlo listo de antemano:
+      </p>
+<pre><code>npm.cmd install -g @azure-devops/mcp@2.10.0
+npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code></pre>
+      <p>Si ese <code>--help</code> falla con “npx no se reconoce”, Node no está en el PATH: volvé a la sección 2.2.</p>
+
+      <h3>6.3 Archivo de Cursor — <code>.cursor/mcp.json</code></h3>
+      <p>
+        Creá o reemplazá este archivo <strong>en la raíz de cada repo</strong>
+        (<code>NWebCore.Backend</code> y <code>NWeb.Frontend</code>) con este contenido.
+        Es la unión de lo que hay en backend (<code>ado</code>) y lo que usa el kit (<code>ado-developer</code>):
+      </p>
+<pre><code>{
+  "mcpServers": {
+    "ado": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp@2.10.0",
+        "DMEDLATSYS",
+        "-d",
+        "core",
+        "work",
+        "work-items"
+      ],
+      "env": {
+        "ado_mcp_project": "NCSLite",
+        "ado_mcp_team": "NCSLite Team"
+      }
+    },
+    "ado-developer": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp@2.10.0",
+        "DMEDLATSYS",
+        "--authentication",
+        "azcli",
+        "-d",
+        "core",
+        "work",
+        "work-items",
+        "repositories"
+      ]
+    }
+  }
+}</code></pre>
+
+      <h3>6.4 Archivo de Claude Code — <code>.mcp.json</code></h3>
+      <p>En la raíz del mismo repo. Claude no usa <code>type: stdio</code> igual que Cursor:</p>
+<pre><code>{
+  "mcpServers": {
+    "ado-developer": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@azure-devops/mcp@2.10.0",
+        "DMEDLATSYS",
+        "--authentication",
+        "azcli",
+        "-d",
+        "core",
+        "work",
+        "work-items",
+        "repositories"
+      ]
+    }
+  }
+}</code></pre>
+
+      <h3>6.5 Activarlo en Cursor</h3>
+      <ol class="steps">
+        <li>Guardá los JSON en el repo que tenés abierto.</li>
+        <li>Reiniciá Cursor (o recargá la ventana).</li>
+        <li>Andá a <strong>Settings → MCP</strong> (o Cursor Settings → Tools &amp; MCP).</li>
+        <li>Tiene que aparecer <code>ado</code> y <code>ado-developer</code>. Si pide Allow / Enable, aceptá.</li>
+        <li>La primera corrida de <code>npx</code> puede tardar mientras baja el paquete. Hace falta red.</li>
+        <li>Si el servidor queda en rojo: <code>az login</code>, confirmá <code>node -v</code> y <code>npx.cmd -v</code> en una terminal nueva, y reiniciá Cursor por completo.</li>
+        <li>Si Cursor dice que no encuentra <code>npx</code>, Node se instaló con Cursor abierto: cerralo del todo y abrilo de nuevo.</li>
+      </ol>
+      <h3>6.6 Activarlo en Claude Code</h3>
+      <p>
+        Claude Code lee <code>.mcp.json</code> en la raíz del repo (no <code>.cursor/mcp.json</code>).
+        Si trabajás solo con Claude, los pasos de “reiniciar Cursor” no aplican.
+      </p>
+      <ol class="steps">
+        <li>Guardá <code>.mcp.json</code> (sección 6.4) en el repo de producto.</li>
+        <li>Cerrá Claude Code y abrilo de nuevo en <em>ese</em> repo (backend o frontend, no el kit).</li>
+        <li>Confirmá que el servidor <code>ado-developer</code> aparece conectado. La primera corrida de <code>npx</code> puede tardar.</li>
+        <li>Si queda en rojo: <code>az login</code>, <code>node -v</code>, <code>npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code>, y reabrí Claude Code.</li>
+      </ol>
+      <div class="note">
+        <strong>Qué usa el kit</strong>
+        <code>/work-item</code> llama al servidor <code>ado-developer</code> (solo lectura: Work Item, padre/hijos, comentarios, adjuntos, iteración, PRs).
+        El hook del kit bloquea tools <code>*_write</code>. No cambies estado, asignación ni sprint desde el chat.
+      </div>
+      <div class="warn">
+        <strong>Estos archivos suelen estar en .gitignore</strong>
+        Cada developer los pone en su disco. El setup del kit también escribe <code>ado-developer</code>;
+        si el backend ya tenía <code>ado</code>, lo deja y suma el del kit. Si <code>.cursor/mcp.json</code> desaparece, volvé a pegar el JSON de arriba o corré setup de nuevo.
+      </div>
+    </section>
+
     <section id="instalar">
-      <h2>6. Instalar el kit en cada repo</h2>
+      <h2>7. Instalar el kit en cada repo</h2>
       <p>Siempre desde la carpeta del kit, apuntando <code>--target</code> al repo de producto. Org y proyecto de Azure son fijos para este equipo:</p>
       <ul>
         <li>Organización: <code>DMEDLATSYS</code></li>
         <li>Proyecto: <code>NCSLite</code></li>
       </ul>
 
-      <h3>6.1 Backend</h3>
+      <h3>7.1 Backend</h3>
 <pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
 
 node dist/cli.js setup --target C:\Maxi\Sistemas\Repos\NWebCore.Backend --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
 
 node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend</code></pre>
 
-      <h3>6.2 Frontend</h3>
+      <h3>7.2 Frontend</h3>
 <pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
 
 node dist/cli.js setup --target C:\Maxi\Sistemas\Repos\NWeb.Frontend --role frontend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
@@ -355,34 +650,147 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
         <strong>No edites las skills generadas</strong>
         Los <code>SKILL.md</code> de <code>.cursor/skills</code> y <code>.claude/skills</code> se regeneran con setup/update. El texto canónico vive en el kit, carpeta <code>skills/</code>.
       </div>
-      <p>Otros comandos útiles del CLI:</p>
-<pre><code>node dist/cli.js setup --target C:\ruta\al\repo --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite --dry-run
-node dist/cli.js update --target C:\ruta\al\repo --role backend --hosts claude,cursor
-node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
-      <p><code>uninstall</code> solo quita archivos administrados por el kit. No borra tu código.</p>
+      <p>
+        Si el equipo publica una versión nueva del kit, seguí la <a href="#actualizar-kit">sección 8</a>.
+        Para desinstalar solo lo administrado por el kit: <code>node dist/cli.js uninstall --target ...</code> (no borra tu código de producto).
+      </p>
+
+      <h3 id="cli-agente">7.3 Cómo encuentra el CLI el agente</h3>
+      <p>
+        <code>/work-item</code> no corre “mágicamente”: el agente tiene que ejecutar el CLI compilado del kit
+        desde el repo de producto. El setup deja esa ruta absoluta (en esta máquina, la carpeta donde clonaste el kit)
+        en tres lugares:
+      </p>
+      <ul>
+        <li><code>CLAUDE.md</code> y <code>AGENTS.md</code> — bloque del kit: <code>node "&lt;corePath&gt;/dist/cli.js"</code></li>
+        <li>Skills generadas (<code>.claude/skills</code> y <code>.cursor/skills</code>) — ya no queda el placeholder <code>&lt;kit&gt;</code></li>
+        <li><code>.ai/kit-manifest.json</code> → <code>source.corePath</code></li>
+      </ul>
+      <p>
+        Comprobá después del setup (ajustá la ruta si tu clon no está en el ejemplo):
+      </p>
+<pre><code>node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend</code></pre>
+      <p>
+        Tiene que figurar <strong>OK [installed] CLI del kit resoluble</strong> y
+        <strong>OK [installed] MCP versión fijada</strong> con <code>@azure-devops/mcp@2.10.0</code>.
+        El chequeo “MCP autenticado” queda en rojo a propósito: doctor no llama a Azure.
+      </p>
+      <div class="warn">
+        <strong>No uses <code>npx team-ai</code></strong>
+        Ese comando busca un paquete npm que no está en el repo. Backend ni siquiera tiene
+        <code>package.json</code>. Tampoco instales el kit con <code>npm link</code> salvo que sepas lo que implica.
+        Si movés la carpeta del kit, volvé a correr <code>update</code> para reescribir la ruta.
+      </div>
+    </section>
+
+    <section id="actualizar-kit">
+      <h2>8. Actualizar el Developer AI Kit</h2>
+      <p>
+        El kit vive en un repo aparte (<code>developer-ai-kit</code>). Los repos de backend y frontend
+        <strong>no</strong> traen el kit por Git: cada máquina tiene una copia del repo del kit y el CLI escribe
+        skills, reglas y archivos bajo <code>.cursor/</code>, <code>.claude/</code> y <code>.ai/</code> en el repo de producto.
+        Cuando el equipo sube cambios al kit (nuevas skills, reglas o versión), hay que <strong>actualizar el repo del kit en tu PC</strong>
+        y después <strong>correr <code>update</code> en cada repo</strong> donde ya hiciste setup.
+      </p>
+
+      <h3>8.1 Actualizar el repo <code>developer-ai-kit</code> en tu máquina</h3>
+      <ol class="steps">
+        <li>Abrí una terminal en la carpeta donde clonaste el kit (por ejemplo <code>C:\Maxi\Repos Propios\developer-ai-kit</code>).</li>
+        <li>Traé los cambios del remoto:
+<pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
+git pull</code></pre>
+        </li>
+        <li>Recompilá el CLI (obligatorio si cambió código TypeScript):
+<pre><code>npm.cmd install
+npm.cmd run build</code></pre>
+        </li>
+        <li>Opcional: mirá la versión del core:
+<pre><code>node dist/cli.js version</code></pre>
+        </li>
+      </ol>
+      <div class="note">
+        <strong>Sin <code>git pull</code> no alcanza</strong>
+        Correr <code>update</code> con una carpeta del kit vieja solo regenera archivos con la versión que tengas en disco.
+        Siempre <code>pull</code> + <code>npm run build</code> antes de actualizar los repos de producto.
+      </div>
+
+      <h3>8.2 Aplicar la actualización en backend y frontend</h3>
+      <p>
+        El comando <code>update</code> vuelve a ejecutar el setup de forma segura: regenera skills y archivos administrados,
+        hace backup de lo que cambia en <code>.ai/backups/</code>, conserva el manifiesto y no pisa tu código de negocio.
+        Si no existía kit instalado, hace un setup completo.
+      </p>
+      <p>Primero podés simular sin escribir:</p>
+<pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
+
+node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWebCore.Backend --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite --dry-run
+
+node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWeb.Frontend --role frontend --hosts claude,cursor --org DMEDLATSYS --project NCSLite --dry-run</code></pre>
+      <p>Si el dry-run se ve bien, aplicá sin <code>--dry-run</code> en cada repo que uses:</p>
+<pre><code>node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWebCore.Backend --role backend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js update --target C:\Maxi\Sistemas\Repos\NWeb.Frontend --role frontend --hosts claude,cursor --org DMEDLATSYS --project NCSLite
+
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pre>
+      <p>
+        Si ya tenías <code>.ai/kit-manifest.json</code>, <code>update</code> reutiliza rol y hosts del manifiesto
+        si no pasás <code>--role</code> / <code>--hosts</code>; igual conviene pasarlos explícitos para no equivocarse.
+      </p>
+
+      <h3>8.3 Después del update</h3>
+      <ol class="steps">
+        <li>Recargá el host que uses: Cursor (cerrá y reabrí) y/o Claude Code en el repo de producto. Si solo usás Claude, no hace falta tocar Cursor.</li>
+        <li>Revisá que <code>doctor</code> no marque drift grave en archivos <code>generated</code>. Si editaste a mano un <code>SKILL.md</code> generado, el update lo va a sobrescribir: los cambios van al repo <code>developer-ai-kit</code>, carpeta <code>skills/</code>.</li>
+        <li>Tu <code>.cursor/mcp.json</code> con el servidor <code>ado</code> del equipo se conserva; el kit vuelve a mergear <code>ado-developer</code>. Si borraste <code>ado</code>, volvé a pegar el JSON de la <a href="#mcp">sección 6</a>.</li>
+        <li>OpenSpec (<code>openspec init</code>) no se repite sola: si el kit pide comandos nuevos de OpenSpec, seguí el aviso del <code>doctor</code>.</li>
+        <li>Los datos de tareas en <code>.ai/work-items/</code> y reportes locales no se pierden con un update normal.</li>
+      </ol>
+
+      <div class="warn">
+        <strong>Qué no hace el update</strong>
+        No actualiza Node, Azure CLI, OpenSpec global ni la extensión Jam. No hace <code>git pull</code> de
+        <code>NWebCore.Backend</code> ni <code>NWeb.Frontend</code>. No commitea ni pushea nada.
+      </div>
+
+      <h3>8.4 Si algo sale mal</h3>
+      <ul>
+        <li>Backups: <code>.ai/backups/&lt;timestamp&gt;/</code> en el repo de producto, copia de archivos que el kit reemplazó.</li>
+        <li><code>doctor</code> compara versión instalada vs la del CLI que acabás de compilar.</li>
+        <li>Para quitar solo lo del kit: <code>node dist/cli.js uninstall --target ... --dry-run</code> y luego sin dry-run. No toca tu código fuente del producto.</li>
+      </ul>
     </section>
 
     <section id="verificar">
-      <h2>7. Verificar que quedó instalado</h2>
+      <h2>9. Verificar que quedó instalado</h2>
       <p>En cada repo de producto tendrían que existir, como mínimo:</p>
       <ul>
         <li>Las 11 skills en <code>.cursor/skills/&lt;nombre&gt;/SKILL.md</code> y lo mismo bajo <code>.claude/skills</code></li>
         <li><code>.cursor/commands/opsx-propose.md</code> (lo crea OpenSpec, no el kit)</li>
         <li><code>.ai/kit-manifest.json</code> con rol <code>backend</code> o <code>frontend</code></li>
-        <li><code>.cursor/mcp.json</code> con el servidor <code>ado-developer</code></li>
+        <li><code>.cursor/mcp.json</code> con el servidor <code>ado-developer</code> (y <code>.mcp.json</code> si usás Claude Code)</li>
         <li><code>openspec/config.yaml</code></li>
+        <li><code>CLAUDE.md</code> / <code>AGENTS.md</code> con <code>node "&lt;ruta-del-kit&gt;/dist/cli.js"</code>, no <code>npx team-ai</code></li>
+        <li><code>doctor</code> en verde para <em>CLI del kit resoluble</em> y <em>MCP versión fijada</em></li>
       </ul>
       <p>Skills del kit: <code>work-item</code>, <code>work-propose</code>, <code>work-apply</code>, <code>verify-change</code>, <code>security-review</code>, <code>security-fix</code>, <code>commit-change</code>, <code>pr-ready</code>, <code>knowledge-backend</code>, <code>knowledge-frontend</code>, <code>knowledge-testing</code>.</p>
       <div class="note">
         <strong>Gitignore</strong>
         En estos repos <code>.cursor/</code>, <code>.claude/</code> y <code>.ai/</code> suelen estar ignorados. Es normal que <code>git status</code> no muestre las skills. Están en disco para Cursor, no para el remoto.
       </div>
-      <p>Abrí <strong>el repo de la tarea</strong> como carpeta de Cursor (backend o frontend, no el kit). En el chat, los slash <code>/work-item</code>, <code>/work-propose</code>, etc. tienen que aparecer como skills del proyecto.</p>
+      <p>
+        Abrí <strong>el repo de la tarea</strong> como carpeta de Cursor o de Claude Code (backend o frontend, no el kit).
+        En el chat, los slash <code>/work-item</code>, <code>/work-propose</code>, etc. tienen que aparecer como skills del proyecto.
+      </p>
     </section>
 
     <section id="usar">
-      <h2>8. Cómo usar el kit (flujo diario)</h2>
-      <p>Trabajá siempre en el chat de Cursor con el repo correcto abierto. Reemplazá <code>6551</code> por el id de tu Work Item.</p>
+      <h2>10. Cómo usar el kit (flujo diario)</h2>
+      <p>
+        Trabajá siempre en el chat de Cursor o Claude Code con el repo correcto abierto.
+        Reemplazá <code>6551</code> por el id de tu Work Item.
+        El agente tiene que poder ejecutar el CLI de la <a href="#cli-agente">sección 7.3</a>; si <code>npx team-ai</code> falla, está leyendo instrucciones viejas: corré <code>update</code>.
+      </p>
 
       <h3>Paso 1 — Contexto y rama</h3>
 <pre><code>/work-item 6551</code></pre>
@@ -442,7 +850,7 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
     </section>
 
     <section id="comandos">
-      <h2>9. Qué hace cada comando (sin magia)</h2>
+      <h2>11. Qué hace cada comando (sin magia)</h2>
       <table>
         <thead>
           <tr><th>Comando</th><th>Qué hace</th><th>Qué no hace</th></tr>
@@ -502,13 +910,23 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
     </section>
 
     <section id="postman">
-      <h2>10. Postman — unirse al team (backend)</h2>
+      <h2>12. Postman — unirse al team (backend)</h2>
       <p>
         Los de backend tienen que estar en el team de Postman del producto para probar las APIs con la colección compartida.
         Frontend no lo necesita para el flujo del kit.
       </p>
+      <div class="warn">
+        <strong>Antes de probar en Postman</strong>
+        Tenés que tener <strong>NWebCore.Backend levantado</strong> en tu máquina (o apuntar Postman al host/puerto donde corre).
+        Si el API no responde, revisá la <a href="#backend-local">sección 13</a> (config y base de datos).
+      </div>
       <p>
         <a class="btn" href="https://app.getpostman.com/join-team?invite_code=78e04386d5f2361741d77210d7ca30fe3b6c6a1222310daf7ba125371ad9779b&amp;target_code=f1f83e3ac0ef46b48d3a47a823b156d0" target="_blank" rel="noopener">Unirme al team de Postman</a>
+        <a class="btn" href="https://jam.dev/c/0d821571-56f1-4b8d-9181-094582437e32" target="_blank" rel="noopener">Video: cómo usar Postman</a>
+      </p>
+      <p>
+        El video en Jam muestra token, variable <code>{{token}}</code>, workspace compartido y una prueba contra el entorno.
+        La API tiene que estar corriendo: normalmente el backend local que configuraste en la sección 13.
       </p>
       <ol class="steps">
         <li>Instalá Postman de escritorio desde <a href="https://www.postman.com/downloads/" target="_blank" rel="noopener">postman.com/downloads</a>, o usá la web app.</li>
@@ -517,7 +935,12 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
         <li>Aceptá la invitación. Si el link expiró, pedí uno nuevo a quien administra el team.</li>
         <li>En la barra lateral, cambiá el workspace al del equipo (no te quedes en <em>My Workspace</em> personal).</li>
         <li>Ahí están las colecciones y environments compartidos. Elegí el environment del ambiente que vas a pegarle (dev / QA / local).</li>
-        <li>Antes de mandar requests, revisá variables: base URL, token o cookie de sesión. No commitees secretos ni los pegues en el chat del kit.</li>
+        <li>
+          Token de las APIs: entrá a <strong>NWEB DEV</strong>, iniciá sesión y copiá el token de autenticación
+          de una request que ya lo mande (header <code>Authorization</code> o el campo que use el material de referencia).
+          Pegalo en la variable de Postman <code>{{token}}</code> del environment del team. No lo commitees ni lo pegues en el chat del kit.
+        </li>
+        <li>Antes de mandar requests, revisá también base URL y el resto de variables del environment (dev / QA / local).</li>
         <li>Cuando pruebes un endpoint de tu tarea, usá la request de la colección si existe. Si no existe, creala en el workspace del team, no en uno privado.</li>
       </ol>
       <div class="note">
@@ -527,8 +950,106 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
       </div>
     </section>
 
+    <section id="backend-local">
+      <h2>13. Backend local — config para probar con base de datos</h2>
+      <p>
+        Para validar una tarea de backend con Postman (o con NWEB DEV) no alcanza con el kit: tenés que poder
+        <strong>correr <code>NWebCore.Backend</code> en local</strong> y que hable con la base de datos y servicios que use tu cambio.
+        Eso se hace ajustando los archivos de configuración del repo. <strong>No commitees</strong> esos cambios si son solo para tu máquina.
+      </p>
+
+      <h3>13.1 Levantar el API</h3>
+      <ol class="steps">
+        <li>Abrí el repo <code>NWebCore.Backend</code> en Visual Studio, Rider o la terminal.</li>
+        <li>Revisá que compila: <code>dotnet build NWebCore.Backend.csproj</code>.</li>
+        <li>Ejecutá el proyecto (F5 o <code>dotnet run --project NWebCore.Backend.csproj</code>).</li>
+        <li>Anotá la URL y el puerto que usa (suelen estar en <code>Properties/launchSettings.json</code>, perfil <code>https</code> o <code>http</code>).</li>
+        <li>En Postman, la <code>baseUrl</code> del environment tiene que coincidir con ese host/puerto si probás contra tu instancia local.</li>
+      </ol>
+
+      <h3>13.2 Archivos de config que suele tocar el equipo</h3>
+      <p>
+        Los nombres exactos pueden variar; pedí al TL o copiá un ejemplo de quien ya tenga el entorno andando.
+        Lo habitual en .NET:
+      </p>
+      <table>
+        <thead>
+          <tr><th>Archivo</th><th>Para qué</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><code>appsettings.json</code> / <code>appsettings.Development.json</code></td>
+            <td>Cadenas de conexión a SQL, URLs de servicios internos, flags de ambiente. Acá va la BD a la que querés pegarle en dev.</td>
+          </tr>
+          <tr>
+            <td><code>Properties/launchSettings.json</code></td>
+            <td>Puerto, URL de arranque, variables de entorno al depurar. Útil si Postman no llega al API.</td>
+          </tr>
+          <tr>
+            <td>Otros <code>*.json</code> de config del repo</td>
+            <td>Integraciones (mensajería, auth, etc.). Solo cambiá lo que tu tarea necesite; no copies prod a ciegas.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <h3>13.3 Buenas prácticas</h3>
+      <ol class="steps">
+        <li>Usá base de datos y servicios de <strong>desarrollo</strong>, nunca producción, salvo política explícita del equipo.</li>
+        <li>Si el repo tiene <code>appsettings.Development.json</code> local o <code>secrets</code> de usuario, preferí eso en lugar de editar el JSON que va al remoto.</li>
+        <li>Antes de commitear, revisá <code>git status</code>: no subas connection strings, passwords ni tokens en <code>appsettings.json</code>.</li>
+        <li>Probá el flujo de tu tarea (Postman o UI) solo cuando el backend arranque sin errores de conexión a BD.</li>
+        <li>La evidencia de cierre sigue siendo Postman en el workspace compartido (metodología de tareas); el backend local es el paso previo.</li>
+      </ol>
+      <div class="note">
+        <strong>Sin acceso a BD</strong>
+        Si no tenés connection string o VPN, no inventes credenciales. Pedí el paquete de config al equipo o marcá la tarea como bloqueada hasta tener ambiente.
+      </div>
+    </section>
+
+    <section id="jam">
+      <h2>14. Jam — grabar videos y reportar bugs</h2>
+      <p>
+        <a href="https://chromewebstore.google.com/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" rel="noopener">Jam</a>
+        es la extensión de Chrome para grabar la pantalla, sacar capturas y armar un reporte con contexto
+        (pasos, consola, red). La usan backend y frontend cuando hay que mostrar un bug, un flujo o el resultado de una tarea.
+      </p>
+      <p>
+        <a class="btn" href="https://chromewebstore.google.com/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" rel="noopener">Instalar Jam en Chrome</a>
+      </p>
+
+      <h3>14.1 Instalar la extensión</h3>
+      <ol class="steps">
+        <li>Abrí Chrome (o un Chromium compatible con Chrome Web Store: Edge también suele servir).</li>
+        <li>Entrá al link de arriba: <a href="https://chromewebstore.google.com/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" rel="noopener">Jam en Chrome Web Store</a>.</li>
+        <li>Clic en <strong>Add to Chrome</strong> / Agregar a Chrome y confirmá <strong>Add extension</strong>.</li>
+        <li>Fijá el ícono: puzzle de extensiones (arriba a la derecha) → Jam → pin / chincheta, para tenerlo a mano.</li>
+        <li>La primera vez pedí crear cuenta o iniciar sesión en Jam. Usá el mail de trabajo si el equipo comparte grabaciones.</li>
+        <li>Chrome va a pedir permiso de <strong>grabar pantalla</strong> y, a veces, de micrófono. Aceptá; si lo bloqueás, la grabación no arranca.</li>
+      </ol>
+
+      <h3>14.2 Cómo grabar</h3>
+      <ol class="steps">
+        <li>Abrí la pantalla donde se reproduce el problema (app local, QA, Azure, etc.).</li>
+        <li>Clic en el ícono de Jam.</li>
+        <li>Elegí <strong>Record</strong> (video) o screenshot. Para un bug, preferí video corto del flujo.</li>
+        <li>Seleccioná pestaña, ventana o pantalla completa. Grabá el repro de punta a punta, sin datos de producción ni passwords en cámara.</li>
+        <li>Pará la grabación. Jam arma un resumen, pasos y suele adjuntar consola / red. Podés anotar o poner voz si hace falta.</li>
+        <li>Copiá el <strong>link</strong> de esa Jam y pegalo en el comentario del Work Item, en el chat de la tarea o junto al PR. No subas el MP4 pesado al repo.</li>
+      </ol>
+      <div class="note">
+        <strong>Relación con el kit</strong>
+        Jam no lo instala el setup. Es para evidenciar el bug o el resultado. En <code>/work-item</code> un adjunto o un link de Jam cuenta como evidencia, no como orden de shell.
+        No grabes secretos, tokens ni datos personales.
+      </div>
+      <div class="warn">
+        <strong>Chrome, no Cursor</strong>
+        La extensión vive en el navegador. Si trabajás la app en otro browser, grabá esa pestaña o toda la pantalla.
+        Si el ícono no aparece, revisá <code>chrome://extensions</code> y que Jam esté habilitada.
+      </div>
+    </section>
+
     <section id="problemas">
-      <h2>11. Problemas frecuentes</h2>
+      <h2>15. Problemas frecuentes</h2>
       <table>
         <thead>
           <tr><th>Síntoma</th><th>Qué hacer</th></tr>
@@ -540,15 +1061,27 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
           </tr>
           <tr>
             <td><code>/opsx-propose</code> no está instalado</td>
-            <td>Falta <code>openspec.cmd init --tools claude,cursor</code> en ese repo. Reiniciá Cursor.</td>
+            <td>Falta <code>openspec.cmd init --tools claude,cursor</code> en ese repo. Recargá Cursor y/o Claude Code.</td>
           </tr>
           <tr>
             <td><code>/work-item</code> no cambia de rama</td>
             <td>Working tree sucio, o no existe <code>sandbox</code> / <code>origin/sandbox</code>. Limpiá o hacé pull de sandbox.</td>
           </tr>
           <tr>
-            <td>No lee Azure</td>
-            <td><code>az login</code>, y que exista <code>.cursor/mcp.json</code> con <code>ado-developer</code>. En backend, si ese archivo se perdió, volvé a correr setup.</td>
+            <td><code>npx team-ai</code> / “could not determine executable” / no existe <code>node_modules/@team-ai/...</code></td>
+            <td>El kit no se instala en el repo. Corré <code>update</code> (sección 8) para que CLAUDE.md y las skills apunten a <code>dist/cli.js</code> del kit. Ver <a href="#cli-agente">sección 7.3</a>.</td>
+          </tr>
+          <tr>
+            <td>Skills con placeholder <code>&lt;kit&gt;</code></td>
+            <td>Instalación vieja. <code>git pull</code> + <code>npm.cmd run build</code> en el kit y <code>update</code> en el repo de producto.</td>
+          </tr>
+          <tr>
+            <td><code>node</code> / <code>npx</code> no se reconoce</td>
+            <td>Node no está en el PATH o es menor a 20.19. Reinstalá el LTS marcando Add to PATH, cerrá el host (Cursor y/o Claude Code) y la terminal, y comprobá <code>node -v</code> y <code>npx.cmd -v</code>.</td>
+          </tr>
+          <tr>
+            <td>MCP en rojo / <code>CONNECTION_CLOSED</code> / <code>ETARGET</code> 1.4.0</td>
+            <td>La 1.4.0 no existe en npm. Tiene que decir <code>@azure-devops/mcp@2.10.0</code>. Cadena: (1) <code>node -v</code> ≥ 20.19 (2) <code>npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code> (3) <code>az login</code> (4) JSON de la sección 6 (5) MCP habilitado (6) reabrir Cursor o Claude Code. Sin PAT. Si corriste <code>update</code> con un kit viejo, volvé a updatear.</td>
           </tr>
           <tr>
             <td>Doctor marca OpenSpec no instalado</td>
@@ -562,19 +1095,34 @@ node dist/cli.js uninstall --target C:\ruta\al\repo</code></pre>
             <td>No aparecen las skills en Cursor</td>
             <td>Abriste el kit en vez del repo de producto, o hace falta recargar la ventana. Las skills viven en <code>.cursor/skills</code> del backend o frontend.</td>
           </tr>
+          <tr>
+            <td>No puedo instalar Claude / pide otra cuenta</td>
+            <td>PC Disney: portal <a href="https://twdc.sharepoint.com/sites/ETAnthropic/SitePages/Home.aspx" target="_blank" rel="noopener">ETAnthropic</a>, login con <strong>email Disney</strong> (SSO), no claude.com. PC que no es Disney: <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a> → Windows. Abrí el repo de producto, no el kit.</td>
+          </tr>
+          <tr>
+            <td>Jam no graba o no está el ícono</td>
+            <td>Instalá la extensión desde el Chrome Web Store, fíjala en la barra, habilitála en <code>chrome://extensions</code> y aceptá permiso de pantalla. No corre dentro de Cursor.</td>
+          </tr>
         </tbody>
       </table>
       <h3>Checklist mínimo antes de la primera tarea</h3>
       <ol class="steps">
-        <li>Node ≥ 20.19, Git, Cursor.</li>
+        <li>Node ≥ 20.19 en PATH: <code>node -v</code>, <code>npm.cmd -v</code>, <code>npx.cmd -v</code>.</li>
+        <li>Azure CLI en PATH: <code>az --version</code>, después <code>az login</code> y <code>az account show</code> con la cuenta de <code>DMEDLATSYS</code>.</li>
+        <li>Cerrar el host que uses (Cursor y/o Claude Code) por completo y reabrirlo, para que vea Node y <code>az</code>.</li>
+        <li>Git, y acceso de lectura a Work Items de <code>NCSLite</code>.</li>
+        <li>Claude: PC Disney → SharePoint ETAnthropic y sesión con <strong>email Disney</strong>; si no → <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a> (Windows). Cursor también vale.</li>
         <li>Kit clonado y <code>npm.cmd run build</code>.</li>
         <li>Repos BE y FE en <code>sandbox</code>.</li>
         <li><code>npm.cmd install -g @fission-ai/openspec</code>.</li>
-        <li><code>az login</code>.</li>
+        <li><code>.cursor/mcp.json</code> y/o <code>.mcp.json</code> con <code>ado-developer</code> en <code>@azure-devops/mcp@2.10.0</code> (sección 6). Habilitarlos en el host.</li>
         <li>Setup del kit en el repo con el rol correcto.</li>
+        <li><code>doctor</code>: CLI resoluble y MCP versión fijada en OK. El rojo de “MCP autenticado” es normal.</li>
         <li><code>openspec.cmd init --tools claude,cursor</code> en ese repo.</li>
-        <li>Reiniciar Cursor y abrir el repo de la tarea.</li>
-        <li>Backend: unirse al team de Postman.</li>
+        <li>Reabrir Cursor y/o Claude Code en el repo de la tarea (no el kit).</li>
+        <li>Si el equipo avisa kit nuevo: <code>git pull</code> + <code>npm.cmd run build</code> en <code>developer-ai-kit</code>, luego <code>update</code> en BE/FE (sección 8).</li>
+        <li>Backend: levantar <code>NWebCore.Backend</code>, config local (sección 13), team de Postman y video de uso.</li>
+        <li>Instalar <a href="https://chromewebstore.google.com/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" rel="noopener">Jam</a> en Chrome y fijar el ícono.</li>
       </ol>
     </section>
 

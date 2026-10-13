@@ -18,9 +18,18 @@ test("setup dry-run, idempotente, update y uninstall conservan al usuario", () =
     const claude = readFileSync(join(repo, "CLAUDE.md"), "utf8");
     assert.match(claude, /reglas del usuario/);
     assert.match(claude, /TEAM-AI-KIT:BEGIN/);
+    assert.match(claude, /CLI del kit:/);
+    assert.match(claude, /node ".*dist\/cli\.js"/);
+    assert.match(claude, /No uses `npx team-ai`/);
+    const skill = readFileSync(join(repo, ".claude", "skills", "work-item", "SKILL.md"), "utf8");
+    assert.doesNotMatch(skill, /<kit>/);
+    assert.match(skill, /node ".*dist\/cli\.js"/);
+    const prReady = readFileSync(join(repo, ".claude", "skills", "pr-ready", "SKILL.md"), "utf8");
+    assert.match(prReady, /node ".*dist\/cli\.js"/);
     const mcp = JSON.parse(readFileSync(join(repo, ".cursor", "mcp.json"), "utf8"));
     assert.ok(mcp.mcpServers.sonar);
     assert.ok(mcp.mcpServers["ado-developer"]);
+    assert.ok(mcp.mcpServers["ado-developer"].args.includes("@azure-devops/mcp@2.10.0"));
     const userHook = readFileSync(join(repo, ".git", "hooks", "pre-push"), "utf8");
     assert.match(userHook, /user-hook/);
 
@@ -35,6 +44,9 @@ test("setup dry-run, idempotente, update y uninstall conservan al usuario", () =
     const report = doctor(repo);
     assert.ok(report.checks.some((check) => check.id === "openspec"));
     assert.ok(report.checks.some((check) => check.id === "mcp-write-guard"));
+    assert.equal(report.checks.find((check) => check.id === "cli-resolvable")?.ok, true);
+    assert.equal(report.checks.find((check) => check.id === "mcp-pin")?.ok, true);
+    assert.ok(report.checks.some((check) => check.id === "mcp-package"));
 
     uninstall(repo);
     const claudeAfter = readFileSync(join(repo, "CLAUDE.md"), "utf8");

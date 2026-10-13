@@ -13,7 +13,8 @@ Contexto/plan vigente; verify aceptado; seguridad sin bloqueos (o excepciones v�
 ## Pasos
 
 1. `git status`, diff vs base y diff del índice.
-2. `team-ai commit-preview --id <id> --files a,b,c --summary "feat(area): ..."`.
+2. `node "<kit>/dist/cli.js" commit-preview --id <id> --files a,b,c --summary "feat(area): ..."`.
+   Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. No uses `npx team-ai`.
 3. Mensaje desde el diff real, no desde la memoria. Convención:
 
 ```text

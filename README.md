@@ -27,6 +27,10 @@ Linux/macOS es el mismo `node dist/cli.js` (sin Bash obligatorio). Wrappers: `sc
 
 Opciones: `--dry-run`. Update: `node dist/cli.js update --target ...`. Uninstall: `node dist/cli.js uninstall --target ...` (solo archivos administrados).
 
+Después del setup, el agente ejecuta el CLI con la ruta absoluta del kit (`source.corePath` en `.ai/kit-manifest.json`). El kit **no** se instala como dependencia del repo: no uses `npx team-ai` ni `node_modules/@team-ai/engineering-kit`.
+
+MCP de Azure DevOps: paquete fijado `@azure-devops/mcp@2.10.0` (la 1.4.0 no existe en npm).
+
 ## Recorrido mínimo por tarea Azure
 
 En el chat del host (comandos lógicos del kit):

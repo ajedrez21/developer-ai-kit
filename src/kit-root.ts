@@ -28,3 +28,12 @@ export function findKitRoot(startDir = dirname(fileURLToPath(import.meta.url))):
 export function posixPath(input: string): string {
   return input.replaceAll("\\", "/");
 }
+
+export function kitCliPath(kitRoot: string): string {
+  return join(kitRoot, "dist", "cli.js");
+}
+
+/** Invocación que deben usar skills, CLAUDE.md y el agente. El kit no vive en node_modules del repo. */
+export function kitCliInvocation(kitRoot: string): string {
+  return `node "${posixPath(kitCliPath(kitRoot))}"`;
+}

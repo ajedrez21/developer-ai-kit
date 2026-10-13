@@ -88,7 +88,7 @@ function main(): void {
         console.log(`${check.ok ? "OK" : "!!"} [${check.level}] ${check.title}: ${check.detail}`);
       }
       console.log(result.summary);
-      if (result.checks.some((check) => !check.ok && check.id !== "mcp-auth")) process.exitCode = 1;
+      if (result.checks.some((check) => !check.ok && check.id !== "mcp-auth" && check.id !== "mcp-package")) process.exitCode = 1;
       return;
     }
     case "fingerprint": {

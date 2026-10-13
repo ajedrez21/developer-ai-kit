@@ -5,7 +5,7 @@ Servidor canónico: `mcp/shared.json`. Render:
 - Cursor: `.cursor/mcp.json` → `mcpServers.ado-developer` con `${env:AZURE_DEVOPS_ORG}` si no se pasó `--org`
 - Claude: `.mcp.json` → args con org o placeholder `${AZURE_DEVOPS_ORG}` (Claude no interpola `${env:}` igual que Cursor)
 
-Auth: Azure CLI `--authentication azcli` o OAuth del MCP. **Nunca** PAT en archivos versionados.
+Paquete fijado: `@azure-devops/mcp@2.10.0` (la 1.4.0 no existe en npm). Auth: Azure CLI `--authentication azcli` o OAuth del MCP. **Nunca** PAT en archivos versionados.
 
 ## Lectura mapeada (tools reales, no nombres conceptuales)
 

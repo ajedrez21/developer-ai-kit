@@ -12,7 +12,8 @@ Armar el paquete de contexto local `READY|BLOCKED|DRAFT` sin inventar contratos 
 
 ## Pasos
 
-1. Ejecutá `node <kit>/dist/cli.js work-item --target . --id <id> [--context path/to/work-context.json] [--org ... --project ...] [--kind feature|fix|chore]`.
+1. Ejecutá `node "<kit>/dist/cli.js" work-item --target . --id <id> [--context path/to/work-context.json] [--org ... --project ...] [--kind feature|fix|chore]`.
+   Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json` y usá `node "<corePath>/dist/cli.js"`. No uses `npx team-ai` ni `node_modules/@team-ai/engineering-kit`.
    El comando crea la rama local `<kind>/<id>-<slug>` desde `sandbox` (si no está local, usa `origin/sandbox`). `<kind>` default es `feature`. El slug sale del título. Si la rama ya existe, hace checkout y no la recrea. Con working tree sucio, no cambia de rama. No hace push.
 2. Si existe paquete TL, importalo con `import-context`. Validá `schemaVersion=team-ai/v1`.
 3. Recuperá Azure con MCP **sólo lectura** del servidor `ado-developer`:

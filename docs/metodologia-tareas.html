@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Metodología de ejecución y cierre de tareas</title>
+  <style>
+    :root {
+      --bg: #f6f4ef;
+      --paper: #fffcf7;
+      --ink: #1c1915;
+      --muted: #5c564c;
+      --line: #ddd6c8;
+      --accent: #1f4d3a;
+      --accent-soft: #e8f1ec;
+      --warn: #7a4a12;
+      --warn-bg: #f8eedc;
+      --code-bg: #1c1915;
+      --code-fg: #f4efe6;
+      --ok: #1f4d3a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "IBM Plex Sans", Calibri, sans-serif;
+      color: var(--ink);
+      background: var(--bg);
+      line-height: 1.55;
+    }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 32px 20px 80px; }
+    header {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      margin-bottom: 28px;
+    }
+    header p.kicker {
+      margin: 0 0 8px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 700;
+    }
+    h1 { margin: 0 0 10px; font-size: 32px; line-height: 1.15; }
+    .lede { margin: 0; color: var(--muted); font-size: 17px; }
+    nav {
+      margin-top: 18px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 18px;
+      font-size: 14px;
+    }
+    nav a { color: var(--accent); text-decoration: none; }
+    nav a:hover { text-decoration: underline; }
+    section {
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 24px 28px;
+      margin-bottom: 18px;
+    }
+    h2 {
+      margin: 0 0 12px;
+      font-size: 22px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    h3 { margin: 22px 0 8px; font-size: 17px; }
+    p, li { font-size: 15.5px; }
+    ol.steps { padding-left: 22px; }
+    ol.steps > li { margin: 10px 0; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 14.5px;
+      margin: 12px 0 4px;
+    }
+    th, td {
+      text-align: left;
+      border-bottom: 1px solid var(--line);
+      padding: 8px 10px 8px 0;
+      vertical-align: top;
+    }
+    th { color: var(--muted); font-weight: 600; }
+    code, kbd {
+      font-family: "Cascadia Code", "Consolas", "Courier New", monospace;
+      font-size: 0.92em;
+    }
+    p code, li code, td code {
+      background: #efeae0;
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+    .note, .warn, .ok {
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin: 14px 0;
+      font-size: 14.5px;
+    }
+    .note { background: var(--accent-soft); border-left: 4px solid var(--accent); }
+    .warn { background: var(--warn-bg); border-left: 4px solid var(--warn); }
+    .ok { background: #e8f3ea; border-left: 4px solid var(--ok); }
+    .note strong, .warn strong, .ok strong { display: block; margin-bottom: 4px; }
+    a.btn {
+      display: inline-block;
+      background: var(--accent);
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      margin: 8px 8px 12px 0;
+    }
+    a.btn:hover { opacity: 0.92; }
+    a.btn.pending {
+      background: #8a7a5a;
+      pointer-events: none;
+    }
+    .split {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin: 16px 0;
+    }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 16px 16px 8px;
+      background: #fbf8f2;
+    }
+    .card h3 { margin-top: 0; }
+    footer {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-top: 8px;
+    }
+    @media (max-width: 640px) {
+      nav, .split { grid-template-columns: 1fr; }
+      header, section { padding: 20px 16px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <p class="kicker">Team AI · Metodología de trabajo</p>
+      <h1>Ejecución, validación y cierre de tareas</h1>
+      <p class="lede">
+        Criterio único para desarrollar, evidenciar y cerrar Work Items. Unifica revisiones,
+        deja prueba de cada implementación y acorta el tiempo de validación.
+      </p>
+      <nav>
+        <a href="#entorno">1. Preparación del entorno</a>
+        <a href="#procedimiento">2. Procedimiento de ejecución</a>
+        <a href="#evidencia">3. Evidencia obligatoria</a>
+        <a href="#backend">3.1 Backend — Postman</a>
+        <a href="#frontend">3.2 Frontend — Jam</a>
+        <a href="#cierre">4. Carga de evidencia y cierre</a>
+        <a href="#ajustes">5. Cambios posteriores</a>
+      </nav>
+    </header>
+
+    <section id="objetivo">
+      <h2>Para qué existe esta metodología</h2>
+      <p>
+        Cada desarrollo tiene que quedar implementado, probado, documentado y respaldado con evidencia,
+        de modo que cualquier integrante del equipo pueda revisar lo hecho sin pedir una demo improvisada.
+      </p>
+      <div class="ok">
+        <strong>Regla corta</strong>
+        Sin evidencia no se cierra la tarea. Backend: captura de Postman en el workspace compartido.
+        Frontend: video corto de Jam con link. Los cambios de alcance van a una tarea nueva.
+      </div>
+    </section>
+
+    <section id="entorno">
+      <h2>1. Preparación del entorno</h2>
+      <p>
+        Antes de tomar cualquier tarea hay que haber leído e instalado todo lo que indica la guía del kit.
+        Esa configuración es <strong>obligatoria</strong> para trabajar con los lineamientos del equipo
+        (Cursor, Node, Azure CLI, MCP, OpenSpec, Postman y Jam).
+      </p>
+      <p>
+        <a class="btn" href="guia-devs.html">Abrir “Cómo instalar y usar el kit”</a>
+      </p>
+      <div class="warn">
+        <strong>No saltees este paso</strong>
+        Si el kit, el MCP de Azure o las herramientas de evidencia no están, el flujo de
+        <code>/work-item</code> → <code>/work-apply</code> y el cierre con Postman/Jam no van a cerrar bien.
+      </div>
+    </section>
+
+    <section id="procedimiento">
+      <h2>2. Procedimiento de ejecución de tareas</h2>
+      <p>
+        Con el entorno listo, mirá el video donde se explica el procedimiento que vamos a usar
+        para ejecutar las tareas (contexto, plan, código, gates, commit).
+      </p>
+      <p>
+        <a class="btn" href="https://jam.dev/c/b1da05c9-4655-4b28-83e3-bca2f9c0f805" target="_blank" rel="noopener" id="video-tareas">Ver video: pasos para la ejecución de tareas</a>
+      </p>
+      <div class="note">
+        <strong>Video en Jam</strong>
+        Muestra el procedimiento del equipo (contexto, plan, código y gates). Si no podés abrir el link, pedí acceso o mirá el resumen escrito en la
+        <a href="guia-devs.html#usar">guía del kit, sección 10</a>.
+      </div>
+      <p>Resumen del orden en el chat de Cursor, sobre el repo de la tarea:</p>
+      <ol class="steps">
+        <li><code>/work-item &lt;id&gt;</code> — contexto Azure y rama desde <code>sandbox</code>.</li>
+        <li><code>/work-propose &lt;id&gt;</code> — plan OpenSpec.</li>
+        <li><code>/work-apply &lt;id&gt;</code> — implementación. Correrlo es la aprobación para codear.</li>
+        <li><code>/verify-change &lt;id&gt;</code> y <code>/security-review &lt;id&gt; --changes</code>.</li>
+        <li><code>/commit-change &lt;id&gt;</code> y <code>/pr-ready &lt;id&gt;</code> — commit local; el PR se crea si lo pedís.</li>
+        <li>Evidencia (Postman o Jam) y cierre de la tarea, según las secciones 3 y 4.</li>
+      </ol>
+    </section>
+
+    <section id="evidencia">
+      <h2>3. Evidencia obligatoria del desarrollo</h2>
+      <p>
+        A partir de ahora, <strong>todas las tareas</strong> tienen que tener evidencia de implementación
+        y de que funciona, antes de cerrarse. El tipo de evidencia depende del rol.
+      </p>
+      <div class="split">
+        <div class="card">
+          <h3>Backend</h3>
+          <p>Postman en el workspace compartido: endpoint actualizado, prueba con <code>200 OK</code> cuando corresponda, y captura de esa ejecución.</p>
+        </div>
+        <div class="card">
+          <h3>Frontend</h3>
+          <p>Jam: video corto de la funcionalidad, prueba rápida según lo pedido, y link para compartir.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="backend">
+      <h2>3.1 Backend — validación con Postman</h2>
+      <p>
+        La colección vive en el workspace compartido del equipo. El alta al team está en la guía de instalación.
+      </p>
+      <p>
+        <a class="btn" href="https://app.getpostman.com/join-team?invite_code=78e04386d5f2361741d77210d7ca30fe3b6c6a1222310daf7ba125371ad9779b&amp;target_code=f1f83e3ac0ef46b48d3a47a823b156d0" target="_blank" rel="noopener">Unirme al team de Postman</a>
+      </p>
+      <ol class="steps">
+        <li>
+          <strong>Obtener el token.</strong> Entrá a NWEB DEV, iniciá sesión y tomá el token de autenticación
+          desde una consulta que ya lo mande (típico: header <code>Authorization</code> de una request autenticada,
+          o el campo que indique el material de referencia). Pegalo en Postman como <code>{{token}}</code>.
+          No lo commitees ni lo pegues en el chat del kit. La guía de instalación (sección 12) cubre el alta al team.
+        </li>
+        <li>
+          <strong>Configurar Postman.</strong> Reemplazá la variable global <code>{{token}}</code> por ese valor.
+          Quedate en el workspace del equipo, no en <em>My Workspace</em>.
+        </li>
+        <li>
+          <strong>Registrar el endpoint.</strong>
+          Si es una API nueva, agregala a la colección con un ejemplo de datos.
+          Si es una API que ya existía, actualizá request, body y ejemplos.
+        </li>
+        <li>
+          <strong>Validar.</strong> Ejecutá las pruebas que correspondan. En las operaciones exitosas
+          que apliquen, la respuesta tiene que ser HTTP <code>200 OK</code>.
+        </li>
+        <li>
+          <strong>Evidencia.</strong> Captura de pantalla de esa ejecución: que se vean el endpoint,
+          el código de respuesta y los datos devueltos.
+        </li>
+        <li>
+          <strong>Guardar.</strong> La colección tiene que quedar actualizada en el workspace compartido
+          para que cualquiera pueda repetir la prueba.
+        </li>
+      </ol>
+      <div class="ok">
+        <strong>Resultado esperado</strong>
+        Endpoint documentado y actualizado en Postman, con evidencia de que funciona.
+      </div>
+      <div class="warn">
+        <strong>Secretos</strong>
+        El token es de tu sesión. No lo commitees, no lo pegues en el chat del kit ni en el Work Item.
+        La captura no debería mostrar passwords; el token podés recortarlo si queda muy expuesto.
+      </div>
+    </section>
+
+    <section id="frontend">
+      <h2>3.2 Frontend — validación con Jam</h2>
+      <p>
+        Usá Jam para dejar evidencia visual del cambio. La extensión se instala en Chrome; no corre dentro de Cursor.
+      </p>
+      <p>
+        <a class="btn" href="https://chromewebstore.google.com/detail/jam/iohjgamcilhbgmhbnllfolmkmmekfmci" target="_blank" rel="noopener">Instalar Jam en Chrome</a>
+      </p>
+      <ol class="steps">
+        <li>Abrí la funcionalidad implementada o modificada (ambiente donde se pueda ver el cambio).</li>
+        <li>Grabá un video corto con Jam que muestre qué cambió.</li>
+        <li>Hacé una prueba rápida que permita comprobar que se comporta según lo pedido.</li>
+        <li>Guardá el video y copiá el enlace para compartirlo. No subas el archivo al repo.</li>
+      </ol>
+      <div class="ok">
+        <strong>Resultado esperado</strong>
+        Video breve con el que se vean los cambios y se pueda comprobar el funcionamiento.
+      </div>
+      <div class="note">
+        <strong>Datos en pantalla</strong>
+        No grabes passwords, tokens ni datos personales de producción. Si hace falta una cuenta de prueba, usá esa.
+      </div>
+    </section>
+
+    <section id="cierre">
+      <h2>4. Carga de evidencia y cierre de la tarea</h2>
+      <p>Cuando el desarrollo y las pruebas están listos:</p>
+      <ol class="steps">
+        <li>Adjuntá en la tarea la evidencia: captura de Postman (backend) o enlace de Jam (frontend).</li>
+        <li>Verificá que la implementación cumpla con lo solicitado.</li>
+        <li>Dejá registrados los cambios realizados (commit con referencia Azure, comentarios si hace falta).</li>
+        <li>Cerrá la tarea.</li>
+      </ol>
+
+      <h3>Nueva modalidad de aprobación</h3>
+      <p>
+        <strong>No hace falta esperar una aprobación manual del Pull Request para cerrar la tarea</strong>,
+        siempre que estén hechos: implementación, validación de funcionamiento y evidencia adjunta.
+      </p>
+      <p>
+        La evidencia demuestra que se desarrolló y se probó según lo definido.
+        La aprobación técnica del código y los controles automáticos del repositorio (CI, políticas de rama)
+        siguen valiendo cuando correspondan.
+      </p>
+      <div class="note">
+        <strong>PR vs. cierre del Work Item</strong>
+        El kit no pushea ni marca el ítem como Done. El cierre en Azure lo hace la persona,
+        después de adjuntar la evidencia. El merge del PR sigue las políticas del repo.
+      </div>
+    </section>
+
+    <section id="ajustes">
+      <h2>5. Cambios o ajustes posteriores</h2>
+      <p>
+        Si en una revisión posterior Diego o José piden algo nuevo, un comportamiento distinto
+        al definido originalmente, o un cambio de alcance, <strong>se abre una tarea nueva</strong> para esos ajustes.
+      </p>
+      <p>
+        Eso cubre cambios de alcance, definiciones nuevas y requerimientos extra.
+        Si lo implementado <em>no cumple</em> los criterios originales o tiene un defecto,
+        se corrige en la validación de esa misma tarea: no es alcance nuevo.
+      </p>
+      <table>
+        <thead>
+          <tr><th>Situación</th><th>Qué hacer</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>No cumple lo pedido o hay un bug de lo implementado</td>
+            <td>Corregir en la misma tarea, con evidencia nueva</td>
+          </tr>
+          <tr>
+            <td>Nueva definición, alcance extra, “mejor así”</td>
+            <td>Tarea nueva; no reabrir el alcance de la anterior</td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <footer>
+      Metodología de ejecución y cierre · NCSLite · Evidencia: Postman (BE) · Jam (FE)
+    </footer>
+  </div>
+</body>
+</html>
