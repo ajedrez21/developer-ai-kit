@@ -182,14 +182,14 @@
       <p>
         Antes de tomar cualquier tarea hay que haber leído e instalado todo lo que indica la guía del kit.
         Esa configuración es <strong>obligatoria</strong> para trabajar con los lineamientos del equipo
-        (Cursor, Node, Azure CLI, MCP, OpenSpec, Postman y Jam).
+        (Cursor, Node, PAT Azure como tl-control, OpenSpec, Postman y Jam).
       </p>
       <p>
         <a class="btn" href="guia-devs.html">Abrir “Cómo instalar y usar el kit”</a>
       </p>
       <div class="warn">
         <strong>No saltees este paso</strong>
-        Si el kit, el MCP de Azure o las herramientas de evidencia no están, el flujo de
+        Si el kit, el PAT Azure o las herramientas de evidencia no están, el flujo de
         <code>/work-item</code> → <code>/work-apply</code> y el cierre con Postman/Jam no van a cerrar bien.
       </div>
     </section>
@@ -210,7 +210,7 @@
       </div>
       <p>Resumen del orden en el chat de Cursor, sobre el repo de la tarea:</p>
       <ol class="steps">
-        <li><code>/work-item &lt;id&gt;</code> — contexto Azure y rama desde <code>sandbox</code>.</li>
+        <li><code>/work-item &lt;id&gt;</code> — el CLI lee Azure con PAT (igual que tl-control), contexto y rama desde <code>sandbox</code>.</li>
         <li><code>/work-propose &lt;id&gt;</code> — plan OpenSpec.</li>
         <li><code>/work-apply &lt;id&gt;</code> — implementación. Correrlo es la aprobación para codear.</li>
         <li><code>/verify-change &lt;id&gt;</code> y <code>/security-review &lt;id&gt; --changes</code>.</li>

@@ -4,13 +4,13 @@ Flujo diario (mismo en Claude Code y Cursor). Los slash del kit son skills del p
 
 ## 1. Contexto
 
-`/work-item 3215` crea la rama local `feature/<id>-<slug>` desde `sandbox`.
+`/work-item 3215` lee la tarea en Azure **con el mismo PAT que tl-control**. El CLI hace GET (texto, comentarios, adjuntos e imágenes) y crea `feature/<id>-<slug>` desde `sandbox`. El agente no abre el `.env` ni pega el token. Sin PAT queda `BLOCKED`.
 
-Si el TL exportó `work-context.json`, pasalo. Si no, el kit arma contexto desde Azure (perfil lectura) y marca CONFIRMED/INFERRED/UNKNOWN.
+El CLI busca `AZURE_DEVOPS_EXT_PAT` o `AZURE_DEVOPS_PAT` en este orden: variable de entorno, `.env` del repo de producto, `.env` del kit, `.env` de `tl-control`. Nunca en Git ni en el chat. MCP `ado-developer` es opcional.
 
 ## 2. Plan
 
-`/work-propose 3215` → el agente llama `/opsx:propose` (Claude) o `/opsx-propose` (Cursor) y guarda `plan-approval.json` de esa versión. Correr `/work-apply` aprueba implementarla. Si el resultado no cierra, se itera y se vuelve a proponer.
+`/work-propose 3215` revisa el código actual contra la definición de la tarea y llama `/opsx:propose` (Claude) o `/opsx-propose` (Cursor). Guarda `plan-approval.json` de esa versión. Correr `/work-apply` aprueba implementarla. Si el resultado no cierra, se itera y se vuelve a proponer.
 
 ## 3. Código
 
@@ -26,4 +26,4 @@ Si el TL exportó `work-context.json`, pasalo. Si no, el kit arma contexto desde
 `/commit-change 3215 --preview` luego `/commit-change 3215`. No hay push.  
 `/pr-ready 3215` exporta `work-result-<repo>.json`. El PR se crea solo si lo pedís.
 
-Scripts determinísticos: el CLI está en `source.corePath` de `.ai/kit-manifest.json` (`node "<corePath>/dist/cli.js" doctor|verify|fingerprint|pr-ready`). No uses `npx team-ai`.
+Scripts determinísticos: el CLI está en `source.corePath` de `.ai/kit-manifest.json` (`node "<corePath>/dist/cli.js" work-item|doctor|verify|fingerprint|pr-ready`). No uses `npx team-ai`.

@@ -1,5 +1,9 @@
 # Developer AI Kit v1.0.0: `/work-item` no funciona siguiendo la guía
 
+> **Estado (2026-10-26):** informe histórico. El pin MCP 1.4.0 y `npx team-ai` ya no aplican.
+> `/work-item` autentica **como tl-control** (`AZURE_DEVOPS_EXT_PAT` en `.env` local); el CLI hace REST GET. MCP es opcional.
+> Guía vigente: [guia-devs.html](guia-devs.html) y [developer-guide.md](developer-guide.md).
+
 Fecha: 2026-10-13
 Kit: `ajedrez21/developer-ai-kit`, commit `90437cf` (2026-10-11)
 Entorno: Windows 11, Node v24.14.0, Claude Code, repos `NWebCore.Backend` y `NWeb.Frontend` en `sandbox`

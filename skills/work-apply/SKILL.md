@@ -10,7 +10,7 @@ disable-model-invocation: true
 
 - Hay un change OpenSpec para el id. Si falta `plan-approval.json`, armala con el plan actual (`contextHash`, `planHash`, repo, `baseSha`) y seguí. Invocar `/work-apply` aprueba esa versión.
 - Si `plan-approval.json` existe y el `planHash` del change coincide, aplicalo. Si el plan en disco cambió, actualizá la aprobación a esa versión y aplicala.
-- Contratos `stored-procedure` / `api-contract` en `CONFIRMED`. Si no, **bloqueá**; no inventes firmas. Mocks sólo de contratos ya aprobados y marcados como mock.
+- Si el contexto incluye contratos `stored-procedure` / `api-contract`, tienen que estar `CONFIRMED`. Si la tarea Azure no menciona SP/API, no inventes contratos ni bloquees por eso. No inventes firmas. Mocks sólo de contratos ya aprobados y marcados como mock.
 - Capturá `git status --porcelain` **antes** de editar. No reviertas ni incluyas cambios staged/unstaged/untracked ajenos.
 
 ## Pasos

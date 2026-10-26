@@ -3,7 +3,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { computeFingerprint } from "./fingerprint.js";
 import { captureGitSnapshot } from "./git.js";
-import { loadPolicy } from "./policy.js";
+import { loadManifest, loadPolicy } from "./policy.js";
 import type { GateStatus, WorkContext } from "./types.js";
 import { loadLocalContext, workItemDir } from "./work-context.js";
 
@@ -53,12 +53,13 @@ export function verifyChange(options: {
   plannedFiles?: string[];
   runner?: CommandRunner;
 }): VerifyReport {
+  const manifest = loadManifest(options.target);
   const ctx =
     options.context ??
     loadLocalContext(
       options.target,
-      options.organization ?? "local",
-      options.project ?? "local",
+      options.organization ?? manifest?.azure.organization ?? "local",
+      options.project ?? manifest?.azure.project ?? "local",
       options.workItemId,
     );
   if (!ctx) throw new Error("No hay work-context local. Ejecutar /work-item primero.");

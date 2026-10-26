@@ -154,7 +154,7 @@
         <a href="#powershell">3. PowerShell y npm.cmd</a>
         <a href="#bajar">4. Bajar los repositorios</a>
         <a href="#externos">5. Paquetes y herramientas externas</a>
-        <a href="#mcp">6. MCP de Azure DevOps</a>
+        <a href="#mcp">6. MCP de Azure DevOps (opcional)</a>
         <a href="#instalar">7. Instalar el kit en cada repo</a>
         <a href="#cli-agente">7.3 CLI que usa el agente</a>
         <a href="#actualizar-kit">8. Actualizar el Developer AI Kit</a>
@@ -174,8 +174,8 @@
         No vuelvas a clonar los repos, no hagas <code>setup</code> de nuevo, no desinstales y no uses
         <code>npm link</code>. OpenSpec, Postman y Jam se quedan como están.
         Solo hay que <strong>actualizar el kit en tu máquina</strong> y <strong>correr <code>update</code></strong>
-        en backend y frontend. Eso reescribe el MCP a <code>@azure-devops/mcp@2.10.0</code> y deja
-        la ruta real del CLI en <code>CLAUDE.md</code> y las skills (adiós a <code>npx team-ai</code> y al pin <code>1.4.0</code>).
+        en backend y frontend. Eso deja el CLI que lee Azure con el mismo PAT que tl-control
+        y la ruta real en <code>CLAUDE.md</code> y las skills (adiós a <code>npx team-ai</code>). El MCP queda opcional.
       </p>
       <p>Ajustá las rutas si tu clon no está en el ejemplo. Todo se corre desde la carpeta del kit:</p>
 <pre><code>cd C:\Maxi\Repos Propios\developer-ai-kit
@@ -191,8 +191,8 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend
 node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pre>
       <div class="ok">
         <strong>Listo cuando</strong>
-        <code>doctor</code> muestra <em>CLI del kit resoluble</em> y <em>MCP versión fijada</em> en OK, con
-        <code>@azure-devops/mcp@2.10.0</code>. El rojo de “MCP autenticado” es normal.
+        <code>doctor</code> muestra <em>CLI del kit resoluble</em> y <em>PAT Azure (tl-control)</em> en OK
+        (el token no se imprime). El rojo de “MCP autenticado” es normal: MCP no hace falta para <code>/work-item</code>.
         Cerrá y reabrí Cursor o Claude Code en el <em>repo de producto</em> (no el kit) y probá <code>/work-item</code>.
       </div>
       <div class="note">
@@ -212,7 +212,7 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
       </p>
       <p>El recorrido de una tarea es:</p>
       <ol class="steps">
-        <li><code>/work-item</code> — lee Azure, arma contexto y crea la rama desde <code>sandbox</code>.</li>
+        <li><code>/work-item</code> — el CLI lee Azure con PAT (igual que tl-control), arma contexto y crea la rama desde <code>sandbox</code>.</li>
         <li><code>/work-propose</code> — genera el plan OpenSpec.</li>
         <li><code>/work-apply</code> — implementa ese plan. Correrlo es la aprobación para codear.</li>
         <li><code>/verify-change</code> y <code>/security-review</code> — gates.</li>
@@ -228,23 +228,26 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
     <section id="requisitos">
       <h2>2. Requisitos de la máquina</h2>
       <p>
-        Azure no se conecta “solo con el JSON”. Cursor arranca el MCP con <code>npx</code>, que viene con Node,
-        y el servidor entra a DevOps con el token de Azure CLI. Si falta uno de esa cadena, <code>/work-item</code> no lee la tarea.
+        <code>/work-item</code> no usa Azure CLI ni el MCP. El CLI del kit lee Azure igual que tl-control:
+        PAT local <code>AZURE_DEVOPS_EXT_PAT</code> (o <code>AZURE_DEVOPS_PAT</code>) y REST GET.
+        El agente no abre el <code>.env</code> ni pega el token.
       </p>
 
       <h3>2.1 Cadena para que Azure ande</h3>
       <ol class="steps">
-        <li><strong>Node.js 20.19 o más</strong> (LTS 20 o 22), con npm y npx en el PATH.</li>
-        <li><strong>Azure CLI</strong> instalado y también en el PATH.</li>
-        <li><strong><code>az login</code></strong> con la cuenta que ve el proyecto <code>NCSLite</code> en la org <code>DMEDLATSYS</code>.</li>
-        <li><strong>Permiso en Azure DevOps</strong> de lectura de Work Items (y repos, para PRs).</li>
-        <li><strong><code>.cursor/mcp.json</code></strong> con <code>ado</code> y <code>ado-developer</code> (sección 6), servidores habilitados en Cursor.</li>
-        <li><strong>Internet</strong> la primera vez: <code>npx</code> baja <code>@azure-devops/mcp@2.10.0</code>.</li>
+        <li><strong>Node.js 20.19 o más</strong> (LTS 20 o 22), con npm en el PATH.</li>
+        <li><strong>PAT de Azure DevOps</strong> en un <code>.env</code> local, igual que tl-control (sección 2.3). No va a Git ni al chat.</li>
+        <li><strong>Permiso en Azure DevOps</strong> de lectura de Work Items en <code>DMEDLATSYS</code> / <code>NCSLite</code>.</li>
+        <li><strong>Internet</strong> para el GET a <code>dev.azure.com</code>.</li>
       </ol>
+      <div class="note">
+        <strong>MCP y Azure CLI son opcionales</strong>
+        Sirven si querés tools extra en el chat. No bloquean <code>/work-item</code>. Detalle en la <a href="#mcp">sección 6</a>.
+      </div>
       <div class="warn">
         <strong>Orden y PATH</strong>
-        Instalá Node y Azure CLI <em>antes</em> de abrir Cursor o Claude Code. Si el host ya estaba abierto, cerralo por completo
-        (no solo la ventana) y volvé a entrar: si no, no ve <code>node</code> ni <code>npx</code> recién instalados.
+        Instalá Node <em>antes</em> de abrir Cursor o Claude Code. Si el host ya estaba abierto, cerralo por completo
+        (no solo la ventana) y volvé a entrar: si no, no ve <code>node</code> recién instalado.
         Si trabajás solo con Claude Code, no hace falta reiniciar Cursor.
       </div>
 
@@ -252,7 +255,7 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
       <p>
         Bajá el LTS desde <a href="https://nodejs.org/" target="_blank" rel="noopener">nodejs.org</a> (20.19+ o 22).
         En el instalador de Windows marcá <strong>Add to PATH</strong>.
-        No uses una versión 18 o menor: el kit pide <code>&gt;= 20.19.0</code> y el MCP corre con Node.
+        No uses una versión 18 o menor: el kit pide <code>&gt;= 20.19.0</code>.
       </p>
       <p>Cerrá la terminal, abrí una nueva y comprobá las tres cosas. En PowerShell usá <code>npm.cmd</code> / <code>npx.cmd</code> (sección 3):</p>
 <pre><code>node -v
@@ -265,32 +268,35 @@ where.exe npx</code></pre>
         <code>C:\Program Files\nodejs\node.exe</code>. Si dice que no encuentra el archivo, Node no está en el PATH: reinstalá marcando Add to PATH o agregá <code>C:\Program Files\nodejs\</code> a las variables de entorno y reiniciá Windows (o al menos Cursor y la terminal).
       </p>
 
-      <h3>2.3 Instalar Azure CLI</h3>
+      <h3>2.3 PAT de Azure (igual que tl-control)</h3>
       <p>
-        Es un programa aparte de Node. Sin esto, el MCP arranca pero no se autentica:
-        <code>ado-developer</code> usa <code>--authentication azcli</code>.
+        El CLI busca <code>AZURE_DEVOPS_EXT_PAT</code> o <code>AZURE_DEVOPS_PAT</code> en este orden:
       </p>
-      <ul>
-        <li>Instalador: <a href="https://aka.ms/installazurecliwindows" target="_blank" rel="noopener">aka.ms/installazurecliwindows</a></li>
-        <li>O en una terminal elevada: <code>winget install -e --id Microsoft.AzureCLI</code></li>
-        <li>Documentación: <a href="https://learn.microsoft.com/cli/azure/install-azure-cli-windows" target="_blank" rel="noopener">Install Azure CLI on Windows</a></li>
-      </ul>
-      <p>Cerrá la terminal, abrí otra y comprobá:</p>
-<pre><code>az --version
-az login
-az account show</code></pre>
+      <ol class="steps">
+        <li>Variable de entorno de la terminal / proceso.</li>
+        <li><code>.env</code> en la raíz del repo de producto (backend o frontend).</li>
+        <li><code>.env</code> en la carpeta del kit (<code>developer-ai-kit/.env</code>).</li>
+        <li><code>tl-control/.env</code> (el mismo archivo que usa el TL).</li>
+      </ol>
       <p>
-        <code>az login</code> abre el navegador. Entrá con la <strong>misma cuenta</strong> con la que entrás a
-        <a href="https://dev.azure.com/DMEDLATSYS" target="_blank" rel="noopener">dev.azure.com/DMEDLATSYS</a>
-        y ves el proyecto <code>NCSLite</code>.
-        <code>az account show</code> tiene que devolver un JSON con tu user, no un error de “please run az login”.
+        Plantilla: <code>developer-ai-kit/.env.example</code>. Copiá la clave, nunca el valor a Git ni al chat.
+        En Azure DevOps: User settings → Personal access tokens, con lectura de Work Items.
+        Si el PAT ya está en tl-control, no hace falta duplicarlo.
       </p>
-      <div class="note">
-        <strong>Permisos</strong>
-        No alcanza con tener Node. La cuenta tiene que poder leer Work Items de <code>NCSLite</code>.
-        Si Git clona el repo pero Azure DevOps te niega el work item, pedí acceso al proyecto.
-        No uses un PAT en <code>mcp.json</code>.
+      <div class="warn">
+        <strong>No lo pegues</strong>
+        Ni en <code>mcp.json</code>, ni en el chat, ni en <code>work-context</code>. El agente no tiene que abrir el <code>.env</code>: lo lee el CLI.
       </div>
+      <p>
+        Comprobá sin mostrar el token: <code>node dist/cli.js doctor --target &lt;repo&gt;</code> tiene que decir
+        <em>PAT Azure (tl-control)</em> presente. Si dice “Sin PAT”, falta el <code>.env</code>.
+      </p>
+
+      <h3>2.3b Azure CLI (solo si usás MCP)</h3>
+      <p>
+        No hace falta para <code>/work-item</code>. Si querés el servidor MCP <code>ado-developer</code>,
+        instalá Azure CLI y hacé <code>az login</code> (detalle en la <a href="#mcp">sección 6</a>).
+      </p>
 
       <h3>2.4 El resto de la máquina</h3>
       <table>
@@ -305,7 +311,7 @@ az account show</code></pre>
           </tr>
           <tr>
             <td>Cursor y/o Claude</td>
-            <td>Chat de las skills y arranque del MCP</td>
+            <td>Chat de las skills</td>
             <td>Ver <a href="#claude">sección 2.5</a>. Abrir el <em>repo de producto</em>, no el kit</td>
           </tr>
           <tr>
@@ -320,13 +326,12 @@ az account show</code></pre>
           </tr>
         </tbody>
       </table>
-      <p>Comprobación rápida de que la cadena Azure está lista (copiá y pegá en PowerShell):</p>
+      <p>Comprobación rápida (desde la carpeta del kit, ajustá <code>--target</code>):</p>
 <pre><code>node -v
-npx.cmd --yes @azure-devops/mcp@2.10.0 --help
-az account show --query user.name -o tsv</code></pre>
+node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend</code></pre>
       <p>
-        Si Node responde versión, npx muestra ayuda del paquete MCP y <code>az account show</code> imprime tu usuario,
-        la máquina está lista para la sección 6 (pegar el JSON y habilitar MCP en Cursor).
+        Si Node es v20.19+ y doctor marca <em>PAT Azure (tl-control)</em> presente (sin imprimir el token),
+        <code>/work-item</code> puede leer Azure. MCP no es parte de esta comprobación.
       </p>
 
       <h3 id="claude">2.5 Instalar Claude</h3>
@@ -468,8 +473,8 @@ git pull</code></pre>
 openspec.cmd --version</code></pre>
       <p>Tiene que mostrar una versión (en el equipo se validó <code>1.14.1</code>).</p>
 
-      <h3>5.2 Azure CLI</h3>
-      <p>Instalación, PATH y <code>az login</code> están en la <a href="#requisitos">sección 2.3</a>. El JSON del MCP, en la <a href="#mcp">sección 6</a>.</p>
+      <h3>5.2 PAT Azure</h3>
+      <p>Igual que tl-control: <code>AZURE_DEVOPS_EXT_PAT</code> en un <code>.env</code> local. Pasos en la <a href="#requisitos">sección 2.3</a>. MCP (opcional) en la <a href="#mcp">sección 6</a>.</p>
 
       <h3>5.3 Skill de seguridad <code>security-compliance</code></h3>
       <p>
@@ -497,10 +502,11 @@ openspec.cmd init --tools claude,cursor --profile core --no-animation</code></pr
     </section>
 
     <section id="mcp">
-      <h2>6. MCP de Azure DevOps — instalarlo y pegar la conexión</h2>
+      <h2>6. MCP de Azure DevOps — opcional</h2>
       <p>
-        Cursor habla con Azure DevOps por un servidor MCP. En este equipo hay <strong>dos entradas</strong>
-        que hay que dejar en el repo:
+        <code>/work-item</code> <strong>no</strong> usa este servidor: lee Azure con el PAT del CLI (sección 2.3).
+        El MCP sirve para tools extra en el chat. En este equipo hay <strong>dos entradas</strong>
+        que el setup puede dejar en el repo:
       </p>
       <table>
         <thead>
@@ -515,7 +521,7 @@ openspec.cmd init --tools claude,cursor --profile core --no-animation</code></pr
           <tr>
             <td><code>ado-developer</code></td>
             <td>Frontend Cursor, y Claude en ambos (<code>.mcp.json</code>)</td>
-            <td>Perfil del kit: paquete fijado <code>@azure-devops/mcp@2.10.0</code>, login con Azure CLI, más el dominio <code>repositories</code> (PRs). Es el que usa <code>/work-item</code>.</td>
+            <td>Perfil opcional del kit: paquete fijado <code>@azure-devops/mcp@2.10.0</code>, login con Azure CLI, dominio <code>repositories</code> (PRs). No es requisito de <code>/work-item</code>.</td>
           </tr>
         </tbody>
       </table>
@@ -640,8 +646,8 @@ npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code></pre>
       </ol>
       <div class="note">
         <strong>Qué usa el kit</strong>
-        <code>/work-item</code> llama al servidor <code>ado-developer</code> (solo lectura: Work Item, padre/hijos, comentarios, adjuntos, iteración, PRs).
-        El hook del kit bloquea tools <code>*_write</code>. No cambies estado, asignación ni sprint desde el chat.
+        <code>/work-item</code> lo ejecuta el CLI con PAT local (REST GET). Si el MCP está conectado, el hook bloquea tools <code>*_write</code>.
+        No cambies estado, asignación ni sprint desde el chat.
       </div>
       <div class="warn">
         <strong>Estos archivos suelen estar en .gitignore</strong>
@@ -712,8 +718,8 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
 <pre><code>node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWebCore.Backend</code></pre>
       <p>
         Tiene que figurar <strong>OK [installed] CLI del kit resoluble</strong> y
-        <strong>OK [installed] MCP versión fijada</strong> con <code>@azure-devops/mcp@2.10.0</code>.
-        El chequeo “MCP autenticado” queda en rojo a propósito: doctor no llama a Azure.
+        <strong>PAT Azure (tl-control)</strong> presente (sin mostrar el token).
+        El chequeo “MCP autenticado” queda en rojo a propósito: MCP no es requisito de <code>/work-item</code>.
       </p>
       <div class="warn">
         <strong>No uses <code>npx team-ai</code></strong>
@@ -816,7 +822,7 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
         <li><code>.cursor/mcp.json</code> con el servidor <code>ado-developer</code> (y <code>.mcp.json</code> si usás Claude Code)</li>
         <li><code>openspec/config.yaml</code></li>
         <li><code>CLAUDE.md</code> / <code>AGENTS.md</code> con <code>node "&lt;ruta-del-kit&gt;/dist/cli.js"</code>, no <code>npx team-ai</code></li>
-        <li><code>doctor</code> en verde para <em>CLI del kit resoluble</em> y <em>MCP versión fijada</em></li>
+        <li><code>doctor</code> en verde para <em>CLI del kit resoluble</em> y <em>PAT Azure (tl-control)</em> presente</li>
       </ul>
       <p>Skills del kit: <code>work-item</code>, <code>work-propose</code>, <code>work-apply</code>, <code>verify-change</code>, <code>security-review</code>, <code>security-fix</code>, <code>commit-change</code>, <code>pr-ready</code>, <code>knowledge-backend</code>, <code>knowledge-frontend</code>, <code>knowledge-testing</code>.</p>
       <div class="note">
@@ -840,18 +846,20 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
       <h3>Paso 1 — Contexto y rama</h3>
 <pre><code>/work-item 6551</code></pre>
       <p>
-        Lee la tarea en Azure (MCP de solo lectura). Si el tech lead te pasó un <code>work-context.json</code>, adjuntarlo en el mismo mensaje.
-        Crea la rama local <code>feature/&lt;id&gt;-&lt;slug&gt;</code> desde <code>sandbox</code> (si no está local, usa <code>origin/sandbox</code>). No hace push.
+        Lee la tarea en Azure con el mismo PAT que tl-control (<code>AZURE_DEVOPS_EXT_PAT</code> en un <code>.env</code> local).
+        El CLI hace GET (título, descripción, criterios, comentarios, adjuntos e imágenes). El agente no abre el <code>.env</code> ni pega el token.
+        No pide paquete TL ni un <code>work-context.json</code> extra. Crea la rama local <code>feature/&lt;id&gt;-&lt;slug&gt;</code> desde <code>sandbox</code> (si no está local, usa <code>origin/sandbox</code>). No hace push.
       </p>
       <p>Revisá <code>.ai/work-items/DMEDLATSYS-NCSLite-&lt;id&gt;/work-context.md</code>:</p>
       <ul>
-        <li><code>READY</code> — podés proponer.</li>
-        <li><code>DRAFT</code> o <code>BLOCKED</code> — faltan criterios o un contrato. No pases a <code>/work-propose</code>.</li>
+        <li><code>READY</code> — la tarea de Azure se leyó; podés proponer.</li>
+        <li><code>BLOCKED</code> — sin PAT, Azure rechazó el token, o el Work Item no tiene título. No pases a <code>/work-propose</code>.</li>
       </ul>
 
       <h3>Paso 2 — Plan</h3>
 <pre><code>/work-propose 6551</code></pre>
       <p>
+        Revisa el código actual del repo contra la definición de la tarea Azure (sin archivos extra ni paquete TL).
         Llama a <code>/opsx-propose</code> (Cursor) y escribe <code>openspec/changes/wi-&lt;id&gt;-*/</code>
         (<code>proposal.md</code>, <code>design.md</code>, <code>tasks.md</code>).
         Guarda <code>plan-approval.json</code> de esa versión. No hay que responder “autorizo” en un paso extra.
@@ -903,8 +911,8 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
         <tbody>
           <tr>
             <td><code>/work-item</code></td>
-            <td>Contexto Azure + rama <code>feature/id-slug</code> desde sandbox</td>
-            <td>No propone, no codea, no pushea</td>
+            <td>CLI lee Azure con PAT (tl-control), contexto + imágenes + rama <code>feature/id-slug</code> desde sandbox</td>
+            <td>No propone, no codea, no pushea, no abre <code>.env</code>, no usa MCP</td>
           </tr>
           <tr>
             <td><code>/work-propose</code></td>
@@ -1109,6 +1117,10 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
             <td>Falta <code>openspec.cmd init --tools claude,cursor</code> en ese repo. Recargá Cursor y/o Claude Code.</td>
           </tr>
           <tr>
+            <td><code>/work-item</code> dice <code>Sin PAT</code> / queda <code>BLOCKED</code></td>
+            <td>Falta <code>AZURE_DEVOPS_EXT_PAT</code> en un <code>.env</code> local (repo, kit o tl-control), igual que el TL. No lo pegues en el chat. <code>doctor</code> tiene que marcar PAT presente. Ver sección 2.3.</td>
+          </tr>
+          <tr>
             <td><code>/work-item</code> no cambia de rama</td>
             <td>Working tree sucio, o no existe <code>sandbox</code> / <code>origin/sandbox</code>. Limpiá o hacé pull de sandbox.</td>
           </tr>
@@ -1126,7 +1138,7 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
           </tr>
           <tr>
             <td>MCP en rojo / <code>CONNECTION_CLOSED</code> / <code>ETARGET</code> 1.4.0</td>
-            <td>La 1.4.0 no existe en npm. Tiene que decir <code>@azure-devops/mcp@2.10.0</code>. Cadena: (1) <code>node -v</code> ≥ 20.19 (2) <code>npx.cmd --yes @azure-devops/mcp@2.10.0 --help</code> (3) <code>az login</code> (4) JSON de la sección 6 (5) MCP habilitado (6) reabrir Cursor o Claude Code. Sin PAT. Si corriste <code>update</code> con un kit viejo, volvé a updatear.</td>
+            <td>No bloquea <code>/work-item</code> (el CLI usa PAT). Si igual querés MCP: pin <code>@azure-devops/mcp@2.10.0</code>, <code>az login</code> y JSON de la sección 6. No pongas PAT en <code>mcp.json</code>.</td>
           </tr>
           <tr>
             <td>Doctor marca OpenSpec no instalado</td>
@@ -1152,17 +1164,17 @@ node dist/cli.js doctor --target C:\Maxi\Sistemas\Repos\NWeb.Frontend</code></pr
       </table>
       <h3>Checklist mínimo antes de la primera tarea</h3>
       <ol class="steps">
-        <li>Node ≥ 20.19 en PATH: <code>node -v</code>, <code>npm.cmd -v</code>, <code>npx.cmd -v</code>.</li>
-        <li>Azure CLI en PATH: <code>az --version</code>, después <code>az login</code> y <code>az account show</code> con la cuenta de <code>DMEDLATSYS</code>.</li>
-        <li>Cerrar el host que uses (Cursor y/o Claude Code) por completo y reabrirlo, para que vea Node y <code>az</code>.</li>
+        <li>Node ≥ 20.19 en PATH: <code>node -v</code>, <code>npm.cmd -v</code>.</li>
+        <li>PAT <code>AZURE_DEVOPS_EXT_PAT</code> en <code>.env</code> local (repo, kit o tl-control). No Git ni chat. Sección 2.3.</li>
+        <li>Cerrar el host que uses (Cursor y/o Claude Code) por completo y reabrirlo, para que vea Node.</li>
         <li>Git, y acceso de lectura a Work Items de <code>NCSLite</code>.</li>
         <li>Claude: PC Disney → SharePoint ETAnthropic y sesión con <strong>email Disney</strong>; si no → <a href="https://claude.com/es/download" target="_blank" rel="noopener">claude.com/es/download</a> (Windows). Cursor también vale.</li>
         <li>Kit clonado y <code>npm.cmd run build</code>.</li>
         <li>Repos BE y FE en <code>sandbox</code>.</li>
         <li><code>npm.cmd install -g @fission-ai/openspec</code>.</li>
-        <li><code>.cursor/mcp.json</code> y/o <code>.mcp.json</code> con <code>ado-developer</code> en <code>@azure-devops/mcp@2.10.0</code> (sección 6). Habilitarlos en el host.</li>
+        <li>MCP <code>ado-developer</code> es opcional (sección 6). No hace falta para <code>/work-item</code>.</li>
         <li>Setup del kit en el repo con el rol correcto.</li>
-        <li><code>doctor</code>: CLI resoluble y MCP versión fijada en OK. El rojo de “MCP autenticado” es normal.</li>
+        <li><code>doctor</code>: CLI resoluble y PAT Azure presente. El rojo de “MCP autenticado” es normal.</li>
         <li><code>openspec.cmd init --tools claude,cursor</code> en ese repo.</li>
         <li>Reabrir Cursor y/o Claude Code en el repo de la tarea (no el kit).</li>
         <li>Si el equipo avisa kit nuevo: <code>git pull</code> + <code>npm.cmd run build</code> en <code>developer-ai-kit</code>, luego <code>update</code> en BE/FE (sección 8).</li>

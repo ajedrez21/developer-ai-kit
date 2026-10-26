@@ -355,7 +355,7 @@ function claudeBlock(options: SetupOptions, kitRoot: string): string {
 Usá las skills del kit para el flujo Azure → OpenSpec → verify → security → commit → PR.
 Comandos lógicos: /work-item /work-propose /work-apply /verify-change /security-review /security-fix /commit-change /pr-ready.
 OpenSpec nativo: Claude \`/opsx:propose\` y \`/opsx:apply\`. No inventar \`/ospx-*\`.
-MCP developer: servidor \`${MCP_SERVER_NAME}\`; no uses herramientas *_write. Rol instalado: ${options.role}.
+MCP developer: servidor \`${MCP_SERVER_NAME}\`; no uses herramientas *_write. Azure lo lee el CLI con PAT local (AZURE_DEVOPS_EXT_PAT), igual que tl-control; no abras .env ni hagas curl. Rol instalado: ${options.role}.
 CLI del kit: \`${cli}\`. No uses \`npx team-ai\` ni \`node_modules/@team-ai/engineering-kit\` — el kit no se instala como dependencia del repo.
 La misma ruta está en \`.ai/kit-manifest.json\` → \`source.corePath\`.`;
 }

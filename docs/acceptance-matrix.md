@@ -9,7 +9,7 @@ Versión del kit: **1.0.0**. Fecha: 2026-10-03.
 | KIT-AC03 | PASS estructural | Setup genera las mismas skills en `.claude/skills` y `.cursor/skills` desde `skills/` | Validación de runtime en ambos hosts |
 | KIT-AC04 | PASS parcial | Doctor lista CLI OpenSpec, `/opsx:propose` vs `/opsx-propose`, verify ausente | OpenSpec real en el repo de producto |
 | KIT-AC05 | PASS con limitation | Denylist + `mcp-guard.cjs`; doctor no declara restricted sin hook | Auth Azure real / 403 |
-| KIT-AC06 | PASS (tests) | Fixture TL CONFIRMED vs INFERRED; Azure-only marca gaps | MCP Azure live |
+| KIT-AC06 | PASS (tests) | Azure-only READY sin contrato inventado; CLI REST + PAT como tl-control | E2E PAT live |
 | KIT-AC07 | PASS (tests) | `approvalStillValid` false si cambia contextHash | — |
 | KIT-AC08 | PASS (tests) | SP UNKNOWN bloquea | — |
 | KIT-AC09 | PASS parcial | Skills + commit bloquear staging ajeno | Apply nativo OpenSpec en host |
@@ -29,4 +29,4 @@ Versión del kit: **1.0.0**. Fecha: 2026-10-03.
 | KIT-AC23 | PASS estructural | `.ai/.gitignore`; doctor no imprime tokens | Revisión humana de logs |
 | KIT-AC24 | PASS (tests) | import TL sin dashboard | Round-trip con repo TL |
 
-E2E host (work-item→…→export): **NOT_RUN** hasta tener Claude Code y Cursor con MCP autenticado. No se afirma portabilidad de host sólo porque hay dos carpetas de skills.
+E2E host (work-item→…→export): **NOT_RUN** hasta una corrida con PAT local (`AZURE_DEVOPS_EXT_PAT`) en Claude Code y Cursor. MCP no es requisito de `/work-item`. No se afirma portabilidad de host sólo porque hay dos carpetas de skills.

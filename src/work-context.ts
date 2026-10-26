@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { attachContextHash, validateWorkContext } from "./contracts.js";
 import { sha256Hex } from "./hash.js";
-import type { ContractStatus, WorkContext } from "./types.js";
+import type { WorkContext } from "./types.js";
 
 export function workItemDir(target: string, organization: string, project: string, id: number): string {
   return join(target, ".ai", "work-items", `${organization}-${project}-${id}`);
@@ -145,13 +145,27 @@ export function azureWorkItemToContext(input: {
   acceptance: string[];
   assignedTo?: string | null;
   parent?: { id: number; revision: number; url: string } | null;
+  comments?: string[];
+  attachmentPaths?: string[];
 }): WorkContext {
-  const criteria = input.acceptance.map((text, index) => ({
-    id: `AC${index + 1}`,
-    text,
-    evidenceIds: ["E-AZURE"],
-  }));
-  const readinessStatus = criteria.length ? "DRAFT" : "BLOCKED";
+  const title = input.title.trim();
+  const description = input.description.trim();
+  const criteria = input.acceptance
+    .map((text) => text.trim())
+    .filter(Boolean)
+    .map((text, index) => ({
+      id: `AC${index + 1}`,
+      text,
+      evidenceIds: ["E-AZURE"],
+    }));
+  const hasTitle = Boolean(title);
+  const hasBody = Boolean(description) || criteria.length > 0;
+  const readinessStatus = hasTitle ? "READY" : "BLOCKED";
+  const gaps = hasTitle
+    ? hasBody
+      ? []
+      : [{ id: "G1", question: "La tarea no trae criterios formales; se usa título y cuerpo de Azure", blocking: false, evidenceIds: ["E-AZURE"] }]
+    : [{ id: "G1", question: "No se recuperó la definición Azure (sin título)", blocking: true, evidenceIds: ["E-AZURE"] }];
   return attachContextHash({
     schemaVersion: "team-ai/v1",
     artifactType: "work-context",
@@ -176,22 +190,13 @@ export function azureWorkItemToContext(input: {
     contextVersion: 1,
     repositories: [],
     summary: {
-      functionalGoal: input.title,
+      functionalGoal: title || `Work item ${input.id}`,
       currentBehavior: "UNKNOWN",
-      expectedBehavior: input.description || "UNKNOWN",
+      expectedBehavior: description || title || "UNKNOWN",
     },
     scope: { included: [], excluded: [], candidateFiles: [] },
     acceptanceCriteria: criteria,
-    contracts: [
-      {
-        id: "CONTRACT-UNKNOWN",
-        kind: "stored-procedure",
-        version: "unknown",
-        status: "UNKNOWN" satisfies ContractStatus,
-        sourceEvidenceIds: [],
-        definition: null,
-      },
-    ],
+    contracts: [],
     dependencies: [],
     evidence: [
       {
@@ -200,17 +205,33 @@ export function azureWorkItemToContext(input: {
         source: `work-item:${input.id}`,
         classification: "CONFIRMED",
         observedAt: new Date().toISOString(),
-        summary: "Campos recuperados desde Azure DevOps",
+        summary: "Definición recuperada desde Azure DevOps (REST con PAT local, igual que tl-control)",
       },
+      ...(input.comments ?? [])
+        .filter(Boolean)
+        .map((text, index) => ({
+          id: `E-COMMENT-${index + 1}`,
+          kind: "azure-comment",
+          source: `work-item:${input.id}`,
+          classification: "CONFIRMED" as const,
+          observedAt: new Date().toISOString(),
+          summary: text.slice(0, 400),
+        })),
+      ...(input.attachmentPaths ?? []).map((path, index) => ({
+        id: `E-ATT-${index + 1}`,
+        kind: "azure-attachment",
+        source: path,
+        classification: "CONFIRMED" as const,
+        observedAt: new Date().toISOString(),
+        summary: `Adjunto local ${path}`,
+      })),
     ],
-    gaps: criteria.length
-      ? []
-      : [{ id: "G1", question: "Faltan criterios de aceptación", blocking: true, evidenceIds: ["E-AZURE"] }],
+    gaps,
     testPlan: [],
     assignedTo: input.assignedTo ?? null,
     readiness: {
       status: readinessStatus,
-      reasons: readinessStatus === "BLOCKED" ? ["Faltan criterios de aceptación"] : ["Contexto Azure incompleto: falta paquete TL o contratos"],
+      reasons: readinessStatus === "BLOCKED" ? ["No se recuperó la definición Azure"] : ["Definición tomada de Azure; no se espera paquete TL"],
     },
   });
 }

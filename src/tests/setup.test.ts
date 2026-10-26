@@ -24,6 +24,13 @@ test("setup dry-run, idempotente, update y uninstall conservan al usuario", () =
     const skill = readFileSync(join(repo, ".claude", "skills", "work-item", "SKILL.md"), "utf8");
     assert.doesNotMatch(skill, /<kit>/);
     assert.match(skill, /node ".*dist\/cli\.js"/);
+    assert.doesNotMatch(skill, /--context path\/to\/work-context\.json/);
+    assert.match(skill, /AZURE_DEVOPS_EXT_PAT/);
+    assert.match(skill, /abre `\.env`/);
+    assert.match(claude, /AZURE_DEVOPS_EXT_PAT/);
+    const propose = readFileSync(join(repo, ".claude", "skills", "work-propose", "SKILL.md"), "utf8");
+    assert.match(propose, /código y tests reales/);
+    assert.doesNotMatch(propose, /Incorporá contexto TL/);
     const prReady = readFileSync(join(repo, ".claude", "skills", "pr-ready", "SKILL.md"), "utf8");
     assert.match(prReady, /node ".*dist\/cli\.js"/);
     const mcp = JSON.parse(readFileSync(join(repo, ".cursor", "mcp.json"), "utf8"));

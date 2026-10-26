@@ -1,23 +1,37 @@
-# MCP Azure DevOps — perfil developer
+# Azure DevOps — lectura del developer
 
-Servidor canónico: `mcp/shared.json`. Render:
+## `/work-item` (canónico)
+
+Igual que tl-control. El **CLI** autentica con PAT local y hace REST **GET**:
+
+- Variables: `AZURE_DEVOPS_EXT_PAT` o `AZURE_DEVOPS_PAT`
+- Dónde: entorno, `.env` del repo de producto, `.env` del kit, o `tl-control/.env`
+- Nunca en Git, `mcp.json`, el chat, ni curl del agente
+
+`doctor` marca **PAT Azure (tl-control)** presente/ausente y **no** imprime el valor.
+
+Sin PAT: `/work-item` queda `BLOCKED` y no crea rama.
+
+## MCP `ado-developer` (opcional)
+
+Servidor canónico: `mcp/shared.json`. No es lo que usa `/work-item`.
 
 - Cursor: `.cursor/mcp.json` → `mcpServers.ado-developer` con `${env:AZURE_DEVOPS_ORG}` si no se pasó `--org`
-- Claude: `.mcp.json` → args con org o placeholder `${AZURE_DEVOPS_ORG}` (Claude no interpola `${env:}` igual que Cursor)
+- Claude: `.mcp.json` → args con org o placeholder `${AZURE_DEVOPS_ORG}`
+- Paquete fijado: `@azure-devops/mcp@2.10.0` (la 1.4.0 no existe en npm)
+- Auth del MCP: Azure CLI `--authentication azcli` o OAuth. **Nunca** PAT en `mcp.json`
 
-Paquete fijado: `@azure-devops/mcp@2.10.0` (la 1.4.0 no existe en npm). Auth: Azure CLI `--authentication azcli` o OAuth del MCP. **Nunca** PAT en archivos versionados.
-
-## Lectura mapeada (tools reales, no nombres conceptuales)
+### Lectura mapeada (si el MCP está conectado)
 
 | Concepto | Tool real |
 |---|---|
-| Work item | `wit_work_item.get` |
+| Work item | `wit_work_item` `action=get` |
 | Padre | relations Hierarchy-Reverse |
 | Hijos | relations Hierarchy-Forward |
-| Comentarios | `wit_work_item.list_comments` |
-| Adjuntos | `wit_work_item_attachment` |
+| Comentarios | `wit_work_item` `action=list_comments` |
+| Adjuntos / imágenes | `wit_work_item_attachment` |
 | Iteración | `work.list_iterations` |
-| PR | ArtifactLink + `repo_pull_request.get` |
+| PR | ArtifactLink + `repo_pull_request` `action=get` |
 
 ## Escritura
 

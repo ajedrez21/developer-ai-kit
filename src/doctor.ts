@@ -2,6 +2,7 @@ import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { hasAzurePat } from "./azure-env.js";
 import { AZURE_MCP_PINNED, MCP_SERVER_NAME, WRITE_TOOLS } from "./mcp.js";
 import { discoverOpenSpec } from "./openspec.js";
 import { loadManifest } from "./policy.js";
@@ -73,6 +74,16 @@ export function doctor(target: string): { checks: DoctorCheck[]; summary: string
   checks.push(cliResolvable(manifest));
   checks.push(mcpPin(target));
   checks.push(mcpPackagePublished());
+  const patOk = hasAzurePat(target);
+  checks.push({
+    id: "azure-pat",
+    title: "PAT Azure (tl-control)",
+    level: patOk ? "authenticated" : "not_configured",
+    ok: patOk,
+    detail: patOk
+      ? "PAT presente en entorno o .env local (no se muestra)."
+      : "Sin AZURE_DEVOPS_EXT_PAT ni AZURE_DEVOPS_PAT. El CLI work-item no puede leer Azure. Definí un .env local igual que tl-control.",
+  });
   checks.push({
     id: "mcp-auth",
     title: "MCP autenticado",

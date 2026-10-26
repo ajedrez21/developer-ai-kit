@@ -10,7 +10,7 @@ No impone otra arquitectura. No incluye dashboard TL ni motor LLM propio. El aud
 - Git
 - OpenSpec CLI (`npm i -g @fission-ai/openspec`) e `openspec init --tools claude,cursor` en el repo de producto
 - Skill `security-compliance` en `~/.cursor/skills/security-compliance` (o `TEAM_AI_SECURITY_SKILL`)
-- Azure DevOps: Azure CLI o OAuth del MCP oficial. Sin acceso, el kit opera con fixtures y deja gates en `NOT_AVAILABLE`
+- Azure DevOps: PAT local `AZURE_DEVOPS_EXT_PAT` o `AZURE_DEVOPS_PAT` (igual que tl-control), en entorno o `.env` (no Git). Sin PAT, `/work-item` queda `BLOCKED`. MCP `ado-developer` es opcional.
 
 ## Instalar en un repo BE/FE
 
@@ -31,7 +31,7 @@ Opciones: `--dry-run`. Update: `node dist/cli.js update --target ...`. Uninstall
 
 Después del setup, el agente ejecuta el CLI con la ruta absoluta del kit (`source.corePath` en `.ai/kit-manifest.json`). El kit **no** se instala como dependencia del repo: no uses `npx team-ai` ni `node_modules/@team-ai/engineering-kit`.
 
-MCP de Azure DevOps: paquete fijado `@azure-devops/mcp@2.10.0` (la 1.4.0 no existe en npm).
+`/work-item` lo ejecuta el CLI con ese PAT (REST GET). El agente no abre `.env` ni pega el token. MCP `@azure-devops/mcp@2.10.0` queda opcional.
 
 ## Recorrido mínimo por tarea Azure
 
@@ -57,7 +57,7 @@ OpenSpec **no** trae `/work-*`. Los aliases reales se listan en `.ai/openspec-co
 
 | Capacidad | Sin acceso |
 |---|---|
-| Work Items Azure MCP | Contexto local desde `--context` / fixtures; doctor: MCP auth `not_configured` |
+| Work Items Azure | CLI con PAT local (`AZURE_DEVOPS_EXT_PAT`, igual que tl-control). Sin PAT: `BLOCKED` |
 | Skill security-compliance | Gate `NOT_AVAILABLE`; no se finge PASS |
 | Host Claude o Cursor | Prueba estructural de archivos; matriz de host queda pendiente |
 
@@ -65,7 +65,7 @@ OpenSpec **no** trae `/work-*`. Los aliases reales se listan en `.ai/openspec-co
 
 - [Guía del developer](docs/developer-guide.md)
 - [Comandos por host](docs/commands-by-host.md)
-- [MCP y permisos](docs/mcp-permissions.md)
+- [Azure PAT y MCP](docs/mcp-permissions.md)
 - [Fingerprint](contracts/fingerprint.md)
 - [Matriz KIT-AC01–AC24](docs/acceptance-matrix.md)
 - [ADR](docs/adr/0001-core.md)

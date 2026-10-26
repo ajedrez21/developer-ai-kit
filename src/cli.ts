@@ -1,18 +1,19 @@
 #!/usr/bin/env node
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, resolve } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { analyzeProjectRules, writeAnalysis } from "./analyze-rules.js";
 import { previewCommit, commitChange } from "./commit.js";
 import { attachContextHash, sampleWorkContext, validateWorkContext, validateWorkResult } from "./contracts.js";
 import { doctor } from "./doctor.js";
 import { computeFingerprint } from "./fingerprint.js";
 import { ensureWorkItemBranch, workItemBranchName, type BranchKind } from "./git.js";
-import { loadPolicy } from "./policy.js";
+import { loadManifest, loadPolicy } from "./policy.js";
 import { KIT_VERSION } from "./kit-root.js";
 import { evaluatePrReady, exportWorkResult, prBody, detectRepoId } from "./pr-ready.js";
 import { setup, uninstall, update } from "./setup.js";
 import { normalizeSecurityOutput, securityReview } from "./security.js";
 import { verifyChange } from "./verify.js";
+import { branchKindFromWorkItemType, fetchAzureWorkItem } from "./azure-rest.js";
 import { azureWorkItemToContext, importTlContext, loadLocalContext, saveLocalContext, workItemDir } from "./work-context.js";
 import type { Host, Role, WorkContext } from "./types.js";
 
@@ -44,7 +45,7 @@ function hostsOf(flags: Record<string, string | boolean>): Host[] {
   return raw.split(",").map((item) => item.trim()).filter((item): item is Host => item === "claude" || item === "cursor");
 }
 
-function main(): void {
+async function main(): Promise<void> {
   const { cmd, flags, rest } = args();
   switch (cmd) {
     case "help":
@@ -88,7 +89,7 @@ function main(): void {
         console.log(`${check.ok ? "OK" : "!!"} [${check.level}] ${check.title}: ${check.detail}`);
       }
       console.log(result.summary);
-      if (result.checks.some((check) => !check.ok && check.id !== "mcp-auth" && check.id !== "mcp-package")) process.exitCode = 1;
+      if (result.checks.some((check) => !check.ok && check.id !== "mcp-auth" && check.id !== "mcp-package" && check.id !== "azure-pat")) process.exitCode = 1;
       return;
     }
     case "fingerprint": {
@@ -105,35 +106,7 @@ function main(): void {
       return;
     }
     case "work-item": {
-      const id = Number(flags.id ?? rest[0]);
-      if (!Number.isFinite(id)) throw new Error("Falta --id");
-      const target = targetOf(flags);
-      let ctx: WorkContext;
-      if (flags.context) {
-        const raw = JSON.parse(readFileSync(String(flags.context), "utf8"));
-        ctx = importTlContext(raw).context;
-      } else {
-        ctx = azureWorkItemToContext({
-          organization: String(flags.org ?? "local"),
-          project: String(flags.project ?? "local"),
-          id,
-          revision: Number(flags.revision ?? 1),
-          url: String(flags.url ?? `https://dev.azure.com/local/local/_workitems/edit/${id}`),
-          title: String(flags.title ?? `Work item ${id}`),
-          description: String(flags.description ?? ""),
-          acceptance: flags.acceptance ? String(flags.acceptance).split("||") : [],
-        });
-      }
-      const policy = loadPolicy(target);
-      const kind = branchKindOf(flags.kind);
-      const branchName = workItemBranchName(ctx.workItem.id, ctx.summary.functionalGoal, kind);
-      const branch = ensureWorkItemBranch(target, {
-        branch: branchName,
-        base: String(flags.base ?? policy.baseBranch),
-        pattern: policy.branchPattern,
-      });
-      const dir = saveLocalContext(target, ctx);
-      console.log(JSON.stringify({ dir, readiness: ctx.readiness, contextHash: ctx.contextHash, branch }, null, 2));
+      await runWorkItem(flags, rest);
       return;
     }
     case "import-context": {
@@ -144,11 +117,13 @@ function main(): void {
       return;
     }
     case "verify": {
+      const target = targetOf(flags);
+      const identity = azureIdentityFrom(target, flags);
       const report = verifyChange({
-        target: targetOf(flags),
+        target,
         workItemId: Number(flags.id ?? rest[0]),
-        organization: flags.org ? String(flags.org) : undefined,
-        project: flags.project ? String(flags.project) : undefined,
+        organization: identity.organization,
+        project: identity.project,
       });
       console.log(`${report.status} extras=${report.extraFiles.length} fingerprint=${report.checkedFingerprint}`);
       if (report.status === "FAIL" || report.status === "NOT_AVAILABLE") process.exitCode = 1;
@@ -191,8 +166,9 @@ function main(): void {
     case "commit": {
       const target = targetOf(flags);
       const id = Number(flags.id ?? rest[0]);
+      const identity = azureIdentityFrom(target, flags);
       const ctx =
-        loadLocalContext(target, String(flags.org ?? "local"), String(flags.project ?? "local"), id) ??
+        loadLocalContext(target, identity.organization, identity.project, id) ??
         sampleWorkContext();
       const owned = String(flags.files ?? "").split(",").filter(Boolean);
       const preview = previewCommit({
@@ -212,8 +188,9 @@ function main(): void {
     case "pr-ready": {
       const target = targetOf(flags);
       const id = Number(flags.id ?? rest[0]);
+      const identity = azureIdentityFrom(target, flags);
       const ctx =
-        loadLocalContext(target, String(flags.org ?? "local"), String(flags.project ?? "local"), id) ??
+        loadLocalContext(target, identity.organization, identity.project, id) ??
         sampleWorkContext();
       const evaluated = evaluatePrReady(target, {
         ctx,
@@ -250,6 +227,75 @@ function main(): void {
   }
 }
 
+async function runWorkItem(flags: Record<string, string | boolean>, rest: string[]): Promise<void> {
+  const id = Number(flags.id ?? rest[0]);
+  if (!Number.isFinite(id)) throw new Error("Falta --id");
+  const target = targetOf(flags);
+  const identity = azureIdentityFrom(target, flags);
+  let ctx: WorkContext;
+  let inferredKind: BranchKind | undefined;
+  if (flags.context) {
+    const raw = JSON.parse(readFileSync(String(flags.context), "utf8"));
+    ctx = importTlContext(raw).context;
+  } else if (flags.title) {
+    ctx = azureWorkItemToContext({
+      organization: identity.organization,
+      project: identity.project,
+      id,
+      revision: Number(flags.revision ?? 1),
+      url: String(flags.url ?? `https://dev.azure.com/${identity.organization}/${identity.project}/_workitems/edit/${id}`),
+      title: String(flags.title),
+      description: String(flags.description ?? ""),
+      acceptance: flags.acceptance ? String(flags.acceptance).split("||") : [],
+    });
+  } else {
+    const dir = workItemDir(target, identity.organization, identity.project, id);
+    const fetched = await fetchAzureWorkItem({
+      organization: identity.organization,
+      project: identity.project,
+      id,
+      target,
+      outDir: join(dir, "attachments"),
+    });
+    inferredKind = branchKindFromWorkItemType(fetched.workItemType);
+    ctx = azureWorkItemToContext({
+      organization: fetched.organization,
+      project: fetched.project,
+      id: fetched.id,
+      revision: fetched.revision,
+      url: fetched.url,
+      title: fetched.title,
+      description: [fetched.description, ...fetched.comments].filter(Boolean).join("\n\n"),
+      acceptance: fetched.acceptance,
+      assignedTo: fetched.assignedTo,
+      parent: fetched.parent,
+      comments: fetched.comments,
+      attachmentPaths: fetched.attachments.map((item) => item.relPath),
+    });
+  }
+  const policy = loadPolicy(target);
+  const kind = flags.kind ? branchKindOf(flags.kind) : (inferredKind ?? "feature");
+  const branchName = workItemBranchName(ctx.workItem.id, ctx.summary.functionalGoal, kind);
+  const branch =
+    ctx.readiness.status === "BLOCKED"
+      ? { branch: branchName, created: false, skipped: true, reason: "definición Azure ausente" }
+      : ensureWorkItemBranch(target, {
+          branch: branchName,
+          base: String(flags.base ?? policy.baseBranch),
+          pattern: policy.branchPattern,
+        });
+  const saved = saveLocalContext(target, ctx);
+  console.log(JSON.stringify({ dir: saved, readiness: ctx.readiness, contextHash: ctx.contextHash, branch }, null, 2));
+}
+
+function azureIdentityFrom(target: string, flags: Record<string, string | boolean>): { organization: string; project: string } {
+  const manifest = loadManifest(target);
+  return {
+    organization: String(flags.org ?? manifest?.azure.organization ?? "local"),
+    project: String(flags.project ?? manifest?.azure.project ?? "local"),
+  };
+}
+
 function branchKindOf(value: string | boolean | undefined): BranchKind {
   const kind = String(value ?? "feature");
   if (kind === "feature" || kind === "fix" || kind === "chore") return kind;
@@ -267,17 +313,20 @@ Comandos: setup | update | uninstall | doctor | fingerprint | analyze-rules
           work-item | import-context | verify | security-review | security-normalize
           commit-preview | commit | pr-ready | export-result | validate-context
 Opciones comunes: --target DIR --role backend|frontend|shared --hosts claude,cursor --dry-run --id N
+work-item lee Azure con PAT local (AZURE_DEVOPS_EXT_PAT), igual que tl-control.
 `;
 }
 
 void mkdirSync;
 void dirname;
-void workItemDir;
 void existsSync;
 void writeFileSync;
 
 try {
-  main();
+  void main().catch((error) => {
+    console.error(error instanceof Error ? error.message : error);
+    process.exitCode = 1;
+  });
 } catch (error) {
   console.error(error instanceof Error ? error.message : error);
   process.exitCode = 1;
