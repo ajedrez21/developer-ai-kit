@@ -100,6 +100,51 @@ export function findChangeDir(target: string, changeId: string): string | null {
   return existsSync(dir) ? dir : null;
 }
 
+export function findChangeForWorkItem(target: string, workItemId: number, changeId?: string): string | null {
+  if (changeId) {
+    const exact = findChangeDir(target, changeId);
+    if (exact) return exact;
+  }
+  const root = join(target, "openspec", "changes");
+  if (!existsSync(root)) return null;
+  const prefix = `wi-${workItemId}`;
+  const matches = readdirSync(root)
+    .filter((name) => name === prefix || name.startsWith(`${prefix}-`))
+    .sort();
+  if (!matches.length) return null;
+  return join(root, matches[0]);
+}
+
+export function extractFilePaths(markdown: string): string[] {
+  const found = new Set<string>();
+  const tick = /`([^`]+)`/g;
+  let match: RegExpExecArray | null;
+  while ((match = tick.exec(markdown))) {
+    const token = match[1].replaceAll("\\", "/").trim();
+    if (looksLikeRepoFile(token)) found.add(token.replace(/^\.\//, ""));
+  }
+  const bare = /(?:^|[\s(])((?:[\w.-]+\/)+[\w.-]+\.[A-Za-z][\w.-]*)/g;
+  while ((match = bare.exec(markdown))) {
+    const token = match[1].replaceAll("\\", "/");
+    if (looksLikeRepoFile(token)) found.add(token);
+  }
+  return [...found].sort();
+}
+
+export function candidateFilesFromOpenSpec(target: string, workItemId: number, changeId?: string): string[] {
+  const dir = findChangeForWorkItem(target, workItemId, changeId);
+  if (!dir) return [];
+  return extractFilePaths(
+    `${readIfExists(join(dir, "tasks.md"))}\n${readIfExists(join(dir, "proposal.md"))}\n${readIfExists(join(dir, "design.md"))}`,
+  );
+}
+
+function looksLikeRepoFile(token: string): boolean {
+  if (!token || token.includes("://") || token.startsWith("#") || /\s/.test(token)) return false;
+  if (token.length > 240) return false;
+  return /[\\/]/.test(token) || /\.[A-Za-z][A-Za-z0-9]{0,7}$/.test(token);
+}
+
 export function parseTasks(tasksMd: string): { total: number; completed: number; items: Array<{ text: string; done: boolean }> } {
   const items = [...tasksMd.matchAll(/^[-*] \[( |x|X)\] (.+)$/gm)].map((match) => ({
     done: match[1].toLowerCase() === "x",

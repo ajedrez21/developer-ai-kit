@@ -1,8 +1,9 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { computeFingerprint } from "./fingerprint.js";
+import { computeFingerprint, isKitOutputPath, writeGateFingerprints } from "./fingerprint.js";
 import { captureGitSnapshot } from "./git.js";
+import { candidateFilesFromOpenSpec } from "./openspec.js";
 import { loadManifest, loadPolicy } from "./policy.js";
 import type { GateStatus, WorkContext } from "./types.js";
 import { loadLocalContext, workItemDir } from "./work-context.js";
@@ -65,10 +66,12 @@ export function verifyChange(options: {
   if (!ctx) throw new Error("No hay work-context local. Ejecutar /work-item primero.");
   const snapshot = captureGitSnapshot(options.target);
   const fingerprint = computeFingerprint(options.target, { scopePaths: ctx.scope.included });
-  const planned = options.plannedFiles ?? ctx.scope.candidateFiles;
+  const fromContext = options.plannedFiles ?? ctx.scope.candidateFiles;
+  const planned =
+    fromContext.length > 0 ? fromContext : candidateFilesFromOpenSpec(options.target, options.workItemId);
   const touched = unique([...snapshot.staged, ...snapshot.unstaged, ...snapshot.untracked, ...snapshot.deleted]);
   const extraFiles = touched
-    .filter((path) => !planned.includes(path) && !path.startsWith(".ai/") && !path.startsWith("openspec/"))
+    .filter((path) => !planned.includes(path) && !isKitOutputPath(path) && !path.startsWith("openspec/"))
     .map((path) => ({ path, reason: "archivo tocado fuera de candidateFiles del contexto" }));
   const checks = runRepoChecks(options.target, options.runner ?? defaultRunner);
   const acceptance = ctx.acceptanceCriteria.map((criterion) => ({
@@ -95,6 +98,7 @@ export function verifyChange(options: {
   mkdirSync(dir, { recursive: true });
   writeFileSync(join(dir, "verify-report.json"), `${JSON.stringify(report, null, 2)}\n`, "utf8");
   writeFileSync(join(dir, "verify-report.md"), renderVerify(report), "utf8");
+  writeGateFingerprints(options.target, fingerprint.codeFingerprint, "verify");
   return report;
 }
 

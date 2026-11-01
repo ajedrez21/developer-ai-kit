@@ -9,6 +9,8 @@ disable-model-invocation: true
 Ejecutá `node "<kit>/dist/cli.js" pr-ready --target . --id <id>`.
 Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. No uses `npx team-ai`.
 
+El CLI carga solo el `--id`: `verify-report.json`, el último security review, commits de la rama (`baseBranch..HEAD`) y tasks de OpenSpec. No hace falta reinyectarlos.
+
 `READY` exige: contexto actualizado y plan aprobado; OpenSpec completo; scope justificado; sin cambios ajenos ni secretos; verify y security vigentes; rama según convención; commits con referencia Azure; working tree limpio (outputs `.ai/` permitidos); contratos cumplidos.
 
 `READY FOR PR` **no** crea el PR. Prepará título/body. Crear/publicar sólo si el developer lo pide explícitamente.

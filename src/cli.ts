@@ -2,14 +2,14 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { analyzeProjectRules, writeAnalysis } from "./analyze-rules.js";
-import { previewCommit, commitChange } from "./commit.js";
-import { attachContextHash, sampleWorkContext, validateWorkContext, validateWorkResult } from "./contracts.js";
+import { previewCommit, commitChange, inferCommitBullets, inferCommitSummary } from "./commit.js";
+import { attachContextHash, validateWorkContext, validateWorkResult } from "./contracts.js";
 import { doctor } from "./doctor.js";
 import { computeFingerprint } from "./fingerprint.js";
 import { ensureWorkItemBranch, workItemBranchName, type BranchKind } from "./git.js";
 import { loadManifest, loadPolicy } from "./policy.js";
 import { KIT_VERSION } from "./kit-root.js";
-import { evaluatePrReady, exportWorkResult, prBody, detectRepoId } from "./pr-ready.js";
+import { detectRepoId, evaluatePrReady, exportWorkResult, gatherReadinessInput, prBody } from "./pr-ready.js";
 import { setup, uninstall, update } from "./setup.js";
 import { normalizeSecurityOutput, securityReview } from "./security.js";
 import { verifyChange } from "./verify.js";
@@ -121,7 +121,7 @@ async function main(): Promise<void> {
       const identity = azureIdentityFrom(target, flags);
       const report = verifyChange({
         target,
-        workItemId: Number(flags.id ?? rest[0]),
+        workItemId: requireWorkItemId(flags, rest),
         organization: identity.organization,
         project: identity.project,
       });
@@ -151,32 +151,38 @@ async function main(): Promise<void> {
       return;
     }
     case "security-review": {
+      const target = targetOf(flags);
+      const identity = azureIdentityFrom(target, flags);
       const report = securityReview({
-        target: targetOf(flags),
-        workItemId: Number(flags.id ?? rest[0]),
-        repoId: detectRepoId(targetOf(flags)),
+        target,
+        workItemId: requireWorkItemId(flags, rest),
+        repoId: detectRepoId(target),
+        organization: identity.organization,
+        project: identity.project,
         mode: flags.full ? "full" : "changes",
-        contextHash: String(flags.contextHash ?? ""),
-        fingerprint: computeFingerprint(targetOf(flags)).codeFingerprint,
+        contextHash: typeof flags.contextHash === "string" ? flags.contextHash : undefined,
+        base: typeof flags.base === "string" ? flags.base : undefined,
+        review: typeof flags.review === "string" ? flags.review : undefined,
       });
       console.log(`${report.result} findings=${report.findings.length}`);
+      if (report.result === "FAIL" || report.result === "NOT_AVAILABLE") process.exitCode = 1;
       return;
     }
     case "commit-preview":
     case "commit": {
       const target = targetOf(flags);
-      const id = Number(flags.id ?? rest[0]);
+      const id = requireWorkItemId(flags, rest);
       const identity = azureIdentityFrom(target, flags);
-      const ctx =
-        loadLocalContext(target, identity.organization, identity.project, id) ??
-        sampleWorkContext();
+      const ctx = loadLocalContext(target, identity.organization, identity.project, id);
+      if (!ctx) throw new Error("No hay work-context local. Ejecutar /work-item primero.");
       const owned = String(flags.files ?? "").split(",").filter(Boolean);
+      const messageFiles = owned.length ? owned : ctx.scope.candidateFiles;
       const preview = previewCommit({
         target,
         ctx,
-        ownedFiles: owned,
-        messageSummary: String(flags.summary ?? `chore: update work item ${id}`),
-        bullets: String(flags.bullets ?? "apply approved change").split("||"),
+        ownedFiles: owned.length ? owned : messageFiles,
+        messageSummary: flags.summary ? String(flags.summary) : inferCommitSummary(ctx, messageFiles),
+        bullets: flags.bullets ? String(flags.bullets).split("||") : inferCommitBullets(target, messageFiles),
       });
       console.log(JSON.stringify(preview, null, 2));
       if (cmd === "commit" && flags.confirm) {
@@ -187,16 +193,16 @@ async function main(): Promise<void> {
     }
     case "pr-ready": {
       const target = targetOf(flags);
-      const id = Number(flags.id ?? rest[0]);
+      const id = requireWorkItemId(flags, rest);
       const identity = azureIdentityFrom(target, flags);
-      const ctx =
-        loadLocalContext(target, identity.organization, identity.project, id) ??
-        sampleWorkContext();
-      const evaluated = evaluatePrReady(target, {
-        ctx,
-        changeId: String(flags.changeId ?? `wi-${id}`),
-        repoId: detectRepoId(target),
-      });
+      const ctx = loadLocalContext(target, identity.organization, identity.project, id);
+      if (!ctx) throw new Error("No hay work-context local. Ejecutar /work-item primero.");
+      const repoId = detectRepoId(target);
+      const changeId = String(flags.changeId ?? `wi-${id}`);
+      const evaluated = evaluatePrReady(
+        target,
+        gatherReadinessInput(target, { ctx, changeId, repoId }),
+      );
       const path = exportWorkResult(target, evaluated.result);
       console.log(JSON.stringify({ status: evaluated.status, reasons: evaluated.reasons, path, body: prBody(ctx, evaluated.result) }, null, 2));
       if (evaluated.status !== "READY") process.exitCode = 1;
@@ -288,6 +294,12 @@ async function runWorkItem(flags: Record<string, string | boolean>, rest: string
   console.log(JSON.stringify({ dir: saved, readiness: ctx.readiness, contextHash: ctx.contextHash, branch }, null, 2));
 }
 
+function requireWorkItemId(flags: Record<string, string | boolean>, rest: string[]): number {
+  const id = Number(flags.id ?? rest[0]);
+  if (!Number.isFinite(id) || id <= 0) throw new Error("Falta --id de Work Item (número válido).");
+  return id;
+}
+
 function azureIdentityFrom(target: string, flags: Record<string, string | boolean>): { organization: string; project: string } {
   const manifest = loadManifest(target);
   return {
@@ -313,6 +325,7 @@ Comandos: setup | update | uninstall | doctor | fingerprint | analyze-rules
           work-item | import-context | verify | security-review | security-normalize
           commit-preview | commit | pr-ready | export-result | validate-context
 Opciones comunes: --target DIR --role backend|frontend|shared --hosts claude,cursor --dry-run --id N
+security-review: --base REF --review FILE --full
 work-item lee Azure con PAT local (AZURE_DEVOPS_EXT_PAT), igual que tl-control.
 `;
 }

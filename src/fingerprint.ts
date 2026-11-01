@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { canonicalize } from "./canonical.js";
 import { captureGitSnapshot, listTrackedFiles, unique } from "./git.js";
@@ -14,6 +14,7 @@ const DEFAULT_EXCLUDES = [
   ".ai/security/",
   ".ai/tmp/",
   ".ai/backups/",
+  ".security-compliance/",
   "node_modules/",
   "dist/",
   "coverage/",
@@ -31,11 +32,21 @@ export function isKitOutputPath(relPath: string): boolean {
   return (
     path === ".ai" ||
     path.startsWith(".ai/") ||
+    path === ".security-compliance" ||
+    path.startsWith(".security-compliance/") ||
     path.startsWith("node_modules/") ||
     path.startsWith("dist/") ||
     path.startsWith("coverage/") ||
     path.startsWith(".git/")
   );
+}
+
+export function writeGateFingerprints(target: string, codeFingerprint: string, kind: "verify" | "security"): void {
+  const dir = join(target, ".ai", "tmp");
+  mkdirSync(dir, { recursive: true });
+  writeFileSync(join(dir, "current-fingerprint.txt"), `${codeFingerprint}\n`, "utf8");
+  const name = kind === "verify" ? "latest-verify-fingerprint.txt" : "latest-security-fingerprint.txt";
+  writeFileSync(join(dir, name), `${codeFingerprint}\n`, "utf8");
 }
 
 export function computeFingerprint(repo: string, options: FingerprintOptions = {}): FingerprintResult {

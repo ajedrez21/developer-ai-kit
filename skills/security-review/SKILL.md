@@ -4,21 +4,27 @@ description: Adapta la skill existente security-compliance para auditar un cambi
 disable-model-invocation: true
 ---
 
-# /security-review `<id>` [--changes|--full]
+# /security-review `<id>` [--changes|--full] [--base <ref>] [--review <file>]
+
+`--id` es obligatorio. Sin un Work Item válido el comando aborta (no crea `local-local-NaN`).
 
 ## Regla dura
 
-**Esta fase no modifica código, tests ni configuración funcional.** Si el working tree cambia, registrá violación y bloqueá readiness.
+**Esta fase no modifica código, tests ni configuración funcional.** Si el working tree cambia, registrá violación y bloqueá readiness. Los reportes en `.security-compliance/` no cuentan como cambio de código.
 
 ## Cómo invocar la skill existente
 
-No reconstruyas el auditor. Usá `security-compliance`:
+No reconstruyas el auditor. Usá el CLI del kit (`security-review`), que llama a `security-compliance`:
 
 | Kit | Skill existente |
 |---|---|
-| `--changes` (default) | `/security-compliance diff` o `sc.py diff --project .` |
-| `--full` | `/security-compliance audit` |
-| commit-range | `diff --base <sha>` si la skill lo permite |
+| `--changes` (default) | `sc.py diff --project . --base <ref> --json` |
+| `--full` | `sc.py audit --project . --json` |
+| commit-range | `--base <sha>` |
+
+`--base` acota el diff. Default: `HEAD` si hay cambios locales; si no, la `baseBranch` de la política (`sandbox`). Pasá `--base` explícito cuando el change ya está commiteado.
+
+Si el agente produjo `review.json`, pasalo con `--review` para que entre al gate. Sin `--review` los controles asistidos quedan `NOT_RUN` y el resultado no puede ser PASS automático.
 
 Delante delimitá el alcance (archivos del change, Work Item, fingerprint) **sin editar el core de la skill**.
 

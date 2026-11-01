@@ -15,6 +15,6 @@ disable-model-invocation: true
 4. Check no aplicable: registrá motivo de applicability; no es fallo de configuración.
 5. Mostrá previstos vs tocados (p. ej. 5/6) y la razón del extra.
 6. Guardá `verify-report.md` + `verify-report.json` con contextHash, snapshot Git y `checkedFingerprint`.
-7. Copiá el fingerprint a `.ai/tmp/latest-verify-fingerprint.txt` y `.ai/tmp/current-fingerprint.txt`.
+7. El CLI escribe el fingerprint en `.ai/tmp/latest-verify-fingerprint.txt` y `.ai/tmp/current-fingerprint.txt`. No los dejes desactualizados a mano.
 
 No generes tests triviales que repitan la implementación. No almacenes secretos en logs.

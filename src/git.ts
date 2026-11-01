@@ -72,6 +72,34 @@ export function unique(values: string[]): string[] {
   return [...new Set(values)].sort();
 }
 
+export function tryResolveBase(repo: string, base: string): string | null {
+  for (const ref of [base, `refs/heads/${base}`, `origin/${base}`]) {
+    if (runGit(repo, ["rev-parse", "--verify", ref]).code === 0) return ref;
+  }
+  return null;
+}
+
+export function listCommitsSince(
+  repo: string,
+  baseRef: string,
+  max = 50,
+): Array<{ sha: string; message: string }> {
+  const args = ["log", `-n${max}`, "--format=%H%x09%s"];
+  const resolved = tryResolveBase(repo, baseRef);
+  if (resolved) args.push(`${resolved}..HEAD`);
+  const result = runGit(repo, args);
+  if (result.code !== 0) return [];
+  return result.stdout
+    .split(/\r?\n/)
+    .map((line) => line.trimEnd())
+    .filter(Boolean)
+    .map((line) => {
+      const tab = line.indexOf("\t");
+      if (tab < 0) return { sha: line, message: "" };
+      return { sha: line.slice(0, tab), message: line.slice(tab + 1) };
+    });
+}
+
 export type BranchKind = "feature" | "fix" | "chore";
 
 export function workItemBranchName(id: number, title: string, kind: BranchKind = "feature"): string {

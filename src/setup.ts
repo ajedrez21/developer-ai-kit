@@ -76,6 +76,7 @@ export function setup(options: SetupOptions): SetupReport {
       if (current === file.content) actions.push(`unchanged ${file.path}`);
       else actions.push(`would ${current == null ? "create" : "update"} ${file.path}`);
     }
+    if (rootGitignoreNeedsUpdate(target)) actions.push("would update .gitignore");
     return { actions, managedFiles, warnings };
   }
 
@@ -110,6 +111,7 @@ export function setup(options: SetupOptions): SetupReport {
   const gitHook = installGitPrePush(target, false);
   managedFiles.push({ path: ".git/hooks/pre-push", hash: sha256Prefixed(gitHook), kind: "merged-block" });
   actions.push("merged git pre-push");
+  if (ensureRootGitignore(target)) actions.push("updated .gitignore");
 
   writePolicy(target, DEFAULT_POLICY);
   const security = resolveSecuritySkill(options.securitySkillPath);
@@ -316,6 +318,26 @@ function generateHooks(kitRoot: string, hosts: Host[]): Array<{ path: string; co
   out.push({ path: ".ai/hooks/git-pre-push.cjs", content: prePush, kind: "generated" });
   void hosts;
   return out;
+}
+
+const ROOT_GITIGNORE_ENTRIES = [".security-compliance/"];
+
+function rootGitignoreNeedsUpdate(target: string): boolean {
+  const current = readOptional(join(target, ".gitignore")) ?? "";
+  const have = new Set(current.split(/\r?\n/).map((line) => line.trim()));
+  return ROOT_GITIGNORE_ENTRIES.some((entry) => !have.has(entry));
+}
+
+function ensureRootGitignore(target: string): boolean {
+  if (!rootGitignoreNeedsUpdate(target)) return false;
+  const path = join(target, ".gitignore");
+  const current = readOptional(path) ?? "";
+  const have = new Set(current.split(/\r?\n/).map((line) => line.trim()));
+  const missing = ROOT_GITIGNORE_ENTRIES.filter((entry) => !have.has(entry));
+  const body = `# team-ai kit\n${missing.join("\n")}\n`;
+  const next = current.trim() === "" ? body : `${current.replace(/\s*$/, "")}\n\n${body}`;
+  writeFileSync(path, next, "utf8");
+  return true;
 }
 
 function generateIgnoreAndState(options: SetupOptions): Array<{ path: string; content: string; kind: ManagedFile["kind"] }> {

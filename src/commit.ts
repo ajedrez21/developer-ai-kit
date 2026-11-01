@@ -35,10 +35,11 @@ export function previewCommit(options: {
     files.push(...unstagedOwned);
   }
   const ref = workItemRef(options.ctx.workItem.id, policy.workItemRefSyntax);
+  const summary = stripWorkItemRef(options.messageSummary, options.ctx.workItem.id);
   const message = [
-    `${options.messageSummary} ${ref}`.trim(),
+    `${summary} ${ref}`.trim(),
     "",
-    ...options.bullets.map((line) => `- ${line}`),
+    ...options.bullets.filter(Boolean).map((line) => `- ${line.replace(/^-\s*/, "")}`),
   ].join("\n");
   if (looksLikeSecret(message)) blocked.push("El mensaje parece contener un secreto.");
   return { allowed: blocked.length === 0 && files.length > 0, files, blockedReasons: blocked, message };
@@ -85,6 +86,44 @@ export function readDiff(target: string, files: string[]): string {
 export function fileListFromStatus(target: string): string[] {
   if (!existsSync(target)) return [];
   return captureGitSnapshot(target).staged;
+}
+
+export function inferCommitSummary(ctx: WorkContext, files: string[]): string {
+  const goal = stripWorkItemRef(ctx.summary.functionalGoal, ctx.workItem.id).trim() || `work item ${ctx.workItem.id}`;
+  const text = goal.charAt(0).toLowerCase() + goal.slice(1);
+  const area = areaFromFiles(files);
+  return area ? `feat(${area}): ${text}` : `feat: ${text}`;
+}
+
+export function inferCommitBullets(target: string, files: string[]): string[] {
+  if (!files.length) return [];
+  const unstaged = runGit(target, ["diff", "--numstat", "--", ...files]).stdout;
+  const staged = runGit(target, ["diff", "--cached", "--numstat", "--", ...files]).stdout;
+  const bullets: string[] = [];
+  const seen = new Set<string>();
+  for (const line of `${unstaged}\n${staged}`.split(/\r?\n/)) {
+    const match = line.trim().match(/^(\d+|-)\s+(\d+|-)\s+(.+)$/);
+    if (!match || seen.has(match[3])) continue;
+    seen.add(match[3]);
+    bullets.push(`${match[3]} (+${match[1]} -${match[2]})`);
+  }
+  if (bullets.length) return bullets;
+  return files.map((file) => file.replaceAll("\\", "/"));
+}
+
+function areaFromFiles(files: string[]): string | null {
+  for (const file of files) {
+    const parts = file.replaceAll("\\", "/").split("/").filter((part) => part && part !== "." && part !== "src");
+    if (parts.length) return parts[0].replace(/\.[^.]+$/, "");
+  }
+  return null;
+}
+
+function stripWorkItemRef(text: string, id: number): string {
+  return text
+    .replace(new RegExp(`\\s*(?:AB)?#${id}\\b`, "gi"), "")
+    .replace(/\s*#\d+\s*$/g, "")
+    .trim();
 }
 
 void basename;

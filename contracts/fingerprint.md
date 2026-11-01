@@ -12,7 +12,9 @@ Algoritmo portable para saber si la evidencia de verify/security todavía aplica
 
 ## Exclusiones
 
-Sólo outputs conocidos: `.ai/` (work-items, security, tmp, backups), `node_modules/`, `dist/`, `coverage/`, `.git/`. No se excluye código arbitrario.
+Sólo outputs conocidos: `.ai/` (work-items, security, tmp, backups), `.security-compliance/` (reportes de `sc.py`), `node_modules/`, `dist/`, `coverage/`, `.git/`. No se excluye código arbitrario.
+
+`verify`, `security-review` y `pr-ready` usan el mismo algoritmo (`team-ai-fingerprint/v1`) sobre el mismo árbol, con `scope.included` del contexto si está definido. Un hash distinto entre pasos es esperado si cambió código, staged/untracked o config; no lo es si solo se regeneraron outputs del kit.
 
 ## Normalización
 

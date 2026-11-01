@@ -13,8 +13,9 @@ Contexto/plan vigente; verify aceptado; seguridad sin bloqueos (o excepciones v�
 ## Pasos
 
 1. `git status`, diff vs base y diff del índice.
-2. `node "<kit>/dist/cli.js" commit-preview --id <id> --files a,b,c --summary "feat(area): ..."`.
+2. `node "<kit>/dist/cli.js" commit-preview --id <id> --files a,b,c`.
    Si esa ruta no existe, leé `source.corePath` de `.ai/kit-manifest.json`. No uses `npx team-ai`.
+   Sin `--summary`/`--bullets` el CLI arma título y bullets desde el Work Item y el diff. Podés pasarlos para ajustar.
 3. Mensaje desde el diff real, no desde la memoria. Convención:
 
 ```text

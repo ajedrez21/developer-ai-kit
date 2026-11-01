@@ -21,7 +21,7 @@ Generar la propuesta nativa de OpenSpec con la definición Azure ya guardada y e
    - Cursor: `/opsx-propose`
    - No uses `/ospx-*`. Si verify no está instalado, no lo finjas.
 6. Invocá el propose **nativo**. El plan cubre scope, riesgos y aceptación **de la tarea**. Contratos SP/API sólo si la tarea los define; si no, no los inventes ni bloquees el plan.
-7. Generá plan de validación y archivos candidatos. Mostrá el plan al developer.
+7. Generá plan de validación y archivos candidatos. Escribí esos paths en `work-context.json` → `scope.candidateFiles` (y `scope.included` si aplica). Mostrá el plan al developer. `verify` los usa como previstos; si están vacíos, intenta leerlos de `openspec/changes/wi-<id>-*/tasks.md`.
 8. Guardá ya `.ai/work-items/<...>/plan-approval.json` ligado a `contextHash`, `planHash`, repo y `baseSha` de la versión que acabás de generar. No pidas una autorización aparte: invocar `/work-propose` arma esa aprobación. `approvedBy` es quien invocó el comando.
 9. Si el plan cambia y el `planHash` es otro, actualizá `plan-approval.json` a esa versión. Si es la misma versión, no la reescribas.
 

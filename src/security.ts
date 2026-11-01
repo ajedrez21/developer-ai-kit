@@ -1,10 +1,13 @@
 import { spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
-import { captureGitSnapshot } from "./git.js";
+import { isAbsolute, join, resolve } from "node:path";
+import { computeFingerprint, isKitOutputPath, writeGateFingerprints } from "./fingerprint.js";
+import { captureGitSnapshot, tryResolveBase } from "./git.js";
 import { sha256Prefixed } from "./hash.js";
+import { posixPath } from "./kit-root.js";
 import { loadManifest, loadPolicy } from "./policy.js";
 import type { FindingOrigin, GateStatus, Severity } from "./types.js";
+import { loadLocalContext } from "./work-context.js";
 
 export interface NormalizedFinding {
   id: string;
@@ -48,34 +51,53 @@ export function securityReview(options: {
   target: string;
   workItemId: number;
   repoId: string;
+  organization?: string;
+  project?: string;
   mode: "changes" | "full";
-  contextHash: string;
-  fingerprint: string;
+  contextHash?: string;
+  fingerprint?: string;
   base?: string;
+  review?: string;
 }): NormalizedSecurityReport {
-  const before = captureGitSnapshot(options.target).initialStatus;
+  if (!Number.isFinite(options.workItemId) || options.workItemId <= 0) {
+    throw new Error("Falta --id de Work Item (número válido). No se inicia security-review.");
+  }
   const manifest = loadManifest(options.target);
+  const organization = options.organization ?? manifest?.azure.organization ?? "local";
+  const project = options.project ?? manifest?.azure.project ?? "local";
+  const ctx = loadLocalContext(options.target, organization, project, options.workItemId);
+  const fingerprint =
+    options.fingerprint ||
+    computeFingerprint(options.target, { scopePaths: ctx?.scope.included }).codeFingerprint;
+  const contextHash = options.contextHash || ctx?.contextHash || "";
+  const base = options.mode === "full" ? options.base : (options.base ?? defaultChangesBase(options.target));
+  const before = kitRelevantStatus(options.target);
   const skillPath = manifest?.securitySkill.path ?? null;
   const skillVersion = manifest?.securitySkill.version ?? null;
-  const original = invokeSecuritySkill(options.target, skillPath, options.mode, options.base);
-  const after = captureGitSnapshot(options.target).initialStatus;
+  const original = invokeSecuritySkill(options.target, skillPath, options.mode, {
+    base,
+    review: options.review,
+  });
+  const after = kitRelevantStatus(options.target);
   const treeUnchanged = before === after;
   const parsed = normalizeSecurityOutput(original, {
     workItemId: options.workItemId,
     repoId: options.repoId,
     mode: options.mode,
-    contextHash: options.contextHash,
-    fingerprint: options.fingerprint,
+    contextHash,
+    fingerprint,
     skillPath,
     skillVersion,
     treeUnchanged,
-    base: options.base ?? "HEAD",
+    base: base ?? "HEAD",
+    review: options.review,
   });
   if (!treeUnchanged) {
     parsed.result = "FAIL";
     parsed.limitations.push("VIOLACIÓN: la fase review modificó el working tree. Readiness bloqueada.");
   }
-  persistReports(options.target, parsed);
+  persistReports(options.target, parsed, organization, project);
+  writeGateFingerprints(options.target, fingerprint, "security");
   return parsed;
 }
 
@@ -83,26 +105,46 @@ export function invokeSecuritySkill(
   target: string,
   skillPath: string | null,
   mode: "changes" | "full",
-  base?: string,
+  extra?: { base?: string; review?: string },
 ): { kind: "json" | "markdown" | "missing"; raw: string; path: string | null } {
   if (!skillPath || !existsSync(join(skillPath, "scripts", "sc.py"))) {
     return { kind: "missing", raw: "", path: null };
   }
   const command = mode === "full" ? "audit" : "diff";
   const args = [join(skillPath, "scripts", "sc.py"), command, "--project", target, "--json"];
-  if (base) args.push("--base", base);
+  if (extra?.base) args.push("--base", extra.base);
+  if (extra?.review) {
+    const reviewPath = isAbsolute(extra.review) ? extra.review : resolve(target, extra.review);
+    if (!existsSync(reviewPath)) {
+      return { kind: "missing", raw: `--review no existe: ${reviewPath}`, path: skillPath };
+    }
+    args.push("--review", reviewPath);
+  }
   const py = firstPython();
   if (!py) return { kind: "missing", raw: "python no disponible", path: null };
-  const result = spawnSync(py, args, { encoding: "utf8", windowsHide: true });
-  const raw = `${result.stdout ?? ""}${result.stderr ?? ""}`;
-  if (result.status !== 0 && !raw.trim()) {
-    return { kind: "missing", raw: result.stderr || "security skill falló", path: null };
+  const result = spawnSync(py, args, {
+    encoding: "utf8",
+    windowsHide: true,
+    env: securityPythonEnv(),
+  });
+  const stdout = result.stdout ?? "";
+  const stderr = (result.stderr ?? "").trim();
+  const jsonFromStdout = stdout.indexOf("{");
+  if (jsonFromStdout >= 0) {
+    return { kind: "json", raw: stdout.slice(jsonFromStdout), path: skillPath };
   }
-  const jsonStart = raw.indexOf("{");
-  if (jsonStart >= 0) {
-    return { kind: "json", raw: raw.slice(jsonStart), path: skillPath };
+  if (result.status !== 0) {
+    return {
+      kind: "missing",
+      raw: stderr || stdout.trim() || `security skill falló (exit ${result.status})`,
+      path: skillPath,
+    };
   }
-  return { kind: "markdown", raw, path: skillPath };
+  return { kind: "markdown", raw: `${stdout}${stderr ? `\n${stderr}` : ""}`, path: skillPath };
+}
+
+export function securityPythonEnv(base: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  return { ...base, PYTHONUTF8: "1", PYTHONIOENCODING: "utf-8" };
 }
 
 export function normalizeSecurityOutput(
@@ -117,6 +159,7 @@ export function normalizeSecurityOutput(
     skillVersion: string | null;
     treeUnchanged: boolean;
     base: string;
+    review?: string;
   },
 ): NormalizedSecurityReport {
   const reviewId = `review-${new Date().toISOString().replaceAll(/[-:]/g, "").slice(0, 15)}`;
@@ -144,7 +187,10 @@ export function normalizeSecurityOutput(
     treeUnchanged: meta.treeUnchanged,
   };
   if (original.kind === "missing") {
-    base.limitations.push("Skill security-compliance no disponible o no produjo salida. Gate NOT_AVAILABLE, nunca PASS.");
+    const detail = original.raw.trim() ? ` Detalle: ${original.raw.trim().slice(0, 800)}` : "";
+    base.limitations.push(
+      `Skill security-compliance no disponible o no produjo salida. Gate NOT_AVAILABLE, nunca PASS.${detail}`,
+    );
     return base;
   }
   if (original.kind === "markdown") {
@@ -177,10 +223,27 @@ export function normalizeSecurityOutput(
   base.findings = findings.map((item, index) => mapFinding(item as Record<string, unknown>, index));
   base.tools = scanners(parsed);
   base.coverage = String((parsed.snapshot as { scope?: string } | undefined)?.scope ?? "unknown");
+  const changed = (parsed.snapshot as { changed_files?: Array<{ path?: string }> } | undefined)?.changed_files;
+  if (Array.isArray(changed)) {
+    base.scope.files = changed.map((item) => String(item.path ?? item)).filter(Boolean);
+  }
   base.result = applyPolicy(base.findings);
   base.blocking = base.findings
     .filter((finding) => ["CRITICAL", "HIGH"].includes(finding.severity) && finding.origin === "INTRODUCED")
     .map((finding) => finding.id);
+  const missingTools = base.tools.filter((tool) => /:(missing|error)\b/i.test(tool));
+  if (missingTools.length) {
+    base.limitations.push(
+      `Scanners sin cobertura: ${missingTools.join(", ")}. Dependencias o secretos pueden no haberse revisado.`,
+    );
+  }
+  const agentPending = agentControlsPending(parsed);
+  if (!meta.review && agentPending) {
+    base.limitations.push(
+      "Controles de revisión asistida quedaron NOT_RUN (no se pasó --review). El PASS automático no cubre esos controles.",
+    );
+    if (base.result === "PASS") base.result = "REVIEW";
+  }
   if (base.result === "PASS" && base.findings.length === 0 && base.coverage === "unknown") {
     base.result = "REVIEW";
     base.limitations.push("PASS rechazado: cobertura desconocida y sin findings no es evidencia suficiente.");
@@ -240,11 +303,71 @@ function isReadableMarkdown(raw: string): boolean {
 
 function scanners(parsed: Record<string, unknown>): string[] {
   if (!Array.isArray(parsed.scanners)) return [];
-  return parsed.scanners.map((item) => String((item as { name?: string }).name ?? item));
+  return parsed.scanners.map((item) => formatScanner(item));
 }
 
-function persistReports(target: string, report: NormalizedSecurityReport): void {
-  const dir = join(target, ".ai", "security", `local-local-${report.workItemId}`, report.repoId);
+function formatScanner(item: unknown): string {
+  if (typeof item === "string") return item;
+  if (!item || typeof item !== "object") return String(item);
+  const rec = item as { tool?: string; name?: string; status?: string; exit_code?: number; exitCode?: number };
+  const name = rec.tool ?? rec.name ?? "scanner";
+  const status = rec.status ?? "unknown";
+  const exit = rec.exit_code ?? rec.exitCode;
+  return exit == null ? `${name}:${status}` : `${name}:${status}:exit ${exit}`;
+}
+
+function agentControlsPending(parsed: Record<string, unknown>): boolean {
+  const coverage = parsed.coverage as { by_status?: Record<string, number> } | undefined;
+  if (coverage?.by_status && Number(coverage.by_status.NOT_RUN ?? 0) > 0) return true;
+  const controls = parsed.controls;
+  const list = Array.isArray(controls)
+    ? controls
+    : controls && typeof controls === "object"
+      ? Object.values(controls)
+      : [];
+  return list.some((item) => {
+    if (!item || typeof item !== "object") return false;
+    const rec = item as { status?: string; method?: string };
+    const status = String(rec.status ?? "").toUpperCase();
+    const method = String(rec.method ?? "").toLowerCase();
+    return method === "agent" && (status === "NOT_RUN" || status === "UNKNOWN");
+  });
+}
+
+export function securityReportDir(
+  target: string,
+  organization: string,
+  project: string,
+  workItemId: number,
+  repoId: string,
+): string {
+  return join(target, ".ai", "security", `${organization}-${project}-${workItemId}`, repoId);
+}
+
+export function findSecurityReportDir(
+  target: string,
+  organization: string,
+  project: string,
+  workItemId: number,
+  repoId: string,
+): string | null {
+  const candidates = [
+    securityReportDir(target, organization, project, workItemId, repoId),
+    securityReportDir(target, "local", "local", workItemId, repoId),
+  ];
+  for (const dir of candidates) {
+    if (existsSync(join(dir, "latest.json")) || existsSync(dir)) return dir;
+  }
+  return null;
+}
+
+function persistReports(
+  target: string,
+  report: NormalizedSecurityReport,
+  organization: string,
+  project: string,
+): void {
+  const dir = securityReportDir(target, organization, project, report.workItemId, report.repoId);
   mkdirSync(dir, { recursive: true });
   const seq = nextSeq(dir);
   const jsonName = `review-${seq}.json`;
@@ -287,6 +410,24 @@ function firstPython(): string | null {
     if (result.status === 0) return cmd === "py" ? "py" : cmd;
   }
   return null;
+}
+
+function kitRelevantStatus(target: string): string {
+  return captureGitSnapshot(target)
+    .initialStatus.split(/\r?\n/)
+    .filter((line) => {
+      const path = posixPath(line.slice(3).trim());
+      return path && !isKitOutputPath(path);
+    })
+    .join("\n");
+}
+
+function defaultChangesBase(target: string): string {
+  const snap = captureGitSnapshot(target);
+  const dirty = [...snap.staged, ...snap.unstaged, ...snap.untracked, ...snap.deleted].filter((file) => !isKitOutputPath(file));
+  if (dirty.length) return "HEAD";
+  const policy = loadPolicy(target);
+  return tryResolveBase(target, policy.baseBranch) ? policy.baseBranch : "HEAD";
 }
 
 export function exceptionValid(exception: {

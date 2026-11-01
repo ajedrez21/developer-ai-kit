@@ -15,6 +15,7 @@ test("setup dry-run, idempotente, update y uninstall conservan al usuario", () =
 
     const first = setup({ target: repo, role: "backend", hosts: ["claude", "cursor"], organization: "contoso" });
     assert.ok(existsSync(join(repo, ".ai", "kit-manifest.json")));
+    assert.match(readFileSync(join(repo, ".gitignore"), "utf8"), /\.security-compliance\//);
     const claude = readFileSync(join(repo, "CLAUDE.md"), "utf8");
     assert.match(claude, /reglas del usuario/);
     assert.match(claude, /TEAM-AI-KIT:BEGIN/);

@@ -4,7 +4,7 @@ export { setup, update, uninstall } from "./setup.js";
 export { doctor } from "./doctor.js";
 export { verifyChange } from "./verify.js";
 export { normalizeSecurityOutput, securityReview } from "./security.js";
-export { evaluatePrReady, exportWorkResult } from "./pr-ready.js";
+export { evaluatePrReady, exportWorkResult, gatherReadinessInput } from "./pr-ready.js";
 export { validateWorkContext, validateWorkResult, sampleWorkContext, sampleWorkResult } from "./contracts.js";
 export { importTlContext } from "./work-context.js";
 export { KIT_VERSION, SCHEMA_VERSION } from "./kit-root.js";

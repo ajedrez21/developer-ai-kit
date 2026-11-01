@@ -23,6 +23,10 @@ test("fingerprint cubre tracked, untracked, staged y exclusiones .ai", () => {
     const withAi = computeFingerprint(repo);
     assert.equal(edited.codeFingerprint, withAi.codeFingerprint);
     assert.ok(withAi.excluded.some((path) => path.includes(".ai/") || path === ".ai/tmp/ignore-me.txt" || true));
+    mkdirSync(join(repo, ".security-compliance", "reports"), { recursive: true });
+    writeFileSync(join(repo, ".security-compliance", "reports", "run.json"), "{}\n");
+    const withSecurityOut = computeFingerprint(repo);
+    assert.equal(edited.codeFingerprint, withSecurityOut.codeFingerprint);
   } finally {
     cleanup(repo);
   }
